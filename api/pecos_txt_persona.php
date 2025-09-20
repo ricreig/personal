@@ -1,0 +1,66 @@
+<?php
+declare(strict_types=1);
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+
+$ROOT = dirname(__DIR__);
+require_once $ROOT . '/lib/session.php';
+require_once $ROOT . '/lib/db.php';
+require_once $ROOT . '/lib/auth.php';
+
+session_boot();
+$pdo = db();
+$u = auth_user();
+if (!$u) { http_response_code(401); echo json_encode(['error'=>'no-auth']); exit; }
+
+$control = (int)($_GET['control'] ?? 0);
+if ($control <= 0) { http_response_code(400); echo json_encode(['error'=>'bad-req']); exit; }
+
+// verificar estación del empleado y permisos
+$st = $pdo->prepare("SELECT e.nombres, e.fecha_nacimiento, es.oaci FROM empleados e LEFT JOIN estaciones es ON es.id_estacion=e.estacion WHERE e.control=? LIMIT 1");
+$st->execute([$control]);
+$emp = $st->fetch(PDO::FETCH_ASSOC);
+if (!$emp) { http_response_code(404); echo json_encode(['error'=>'not-found']); exit; }
+
+$can = false;
+if (($u['role'] ?? '') === 'admin') $can = true;
+else if (function_exists('user_station_matrix')) {
+  $m = user_station_matrix($pdo, (int)$u['id'] ?? (int)$u['uid'] ?? 0);
+  $can = !empty($m[$emp['oaci']]);
+}
+if (!$can) { http_response_code(403); echo json_encode(['error'=>'forbidden']); exit; }
+
+// rango de años
+$minY = 9999; $maxY = 0;
+foreach (['pecos','txt'] as $t) {
+  $st = $pdo->prepare("SELECT MIN(year) AS miny, MAX(year) AS maxy FROM {$t} WHERE control=?");
+  $st->execute([$control]);
+  $r = $st->fetch(PDO::FETCH_ASSOC);
+  if ($r && $r['miny']) $minY = min($minY, (int)$r['miny']);
+  if ($r && $r['maxy']) $maxY = max($maxY, (int)$r['maxy']);
+}
+if ($minY === 9999 || $maxY === 0) { $minY = (int)date('Y'); $maxY = (int)date('Y'); }
+
+// recoger datos por año
+$outP = []; $outT = [];
+for ($y=$minY; $y <= $maxY; $y++) {
+  $st = $pdo->prepare("SELECT dia1,dia2,dia3,dia4,dia5,dia6,dia7,dia8,dia9,dia10,dia11,dia12 FROM pecos WHERE control=? AND year=?");
+  $st->execute([$control, $y]); $p = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+  $outP[(string)$y] = $p;
+
+  $st = $pdo->prepare("SELECT js,vs,dm,ds,muert,ono FROM txt WHERE control=? AND year=?");
+  $st->execute([$control, $y]); $t = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+  $outT[(string)$y] = $t;
+}
+
+echo json_encode([
+  'ok'=>true,
+  'control'=>$control,
+  'nombre'=>$emp['nombres'] ?? '',
+  'oaci'=>$emp['oaci'] ?? '',
+  'nacimiento'=>$emp['fecha_nacimiento'] ?? '',
+  'minYear'=>$minY,
+  'maxYear'=>$maxY,
+  'pecos'=>$outP,
+  'txt'=>$outT
+], JSON_UNESCAPED_UNICODE);

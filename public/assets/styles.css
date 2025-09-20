@@ -1,0 +1,50 @@
+/* tus estilos aquí */
+body{font-family: Montserrat, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;}
+.dt-buttons .btn{margin-right:.25rem}
+:root{
+  /* Paleta SENEAM principal */
+  --seneam-azul-oscuro: #0A3873;
+  --seneam-azul:        #0468BF;
+  --seneam-gris:        #A4A5A6;
+  --seneam-gris-osc:    #727372;
+  --seneam-negro:       #000000;
+
+  /* Tríada (para alertas) */
+  --triada-verde:  #B4BF04; /* OK / éxito */
+  --triada-rojo:   #BF0C04; /* crítico */
+  --triada-azul:   #264A6A; /* info */
+  --triada-oliva:  #3E4021; /* badges discretos */
+
+  /* Complementarios (detalles/botones/accent) */
+  --comp-azul:     #225480;
+  --comp-navy:     #213140;
+  --comp-naranja:  #BF7704;
+  --comp-marron:   #6A5026;
+
+  /* Semaforización de vigencias (fondo texto) */
+  --vig-ok-bg:       var(--triada-verde);
+  --vig-mid-bg:      var(--seneam-azul);     /* “azul” intermedio */
+  --vig-warn-bg:     var(--comp-naranja);    /* amarillo/naranja */
+  --vig-bad-bg:      var(--triada-rojo);     /* vencido */
+
+  --vig-ok-fg:       #10200a;
+  --vig-mid-fg:      #ffffff;
+  --vig-warn-fg:     #1f1300;
+  --vig-bad-fg:      #ffffff;
+}
+
+/* Dark header elegante */
+body { font-family: 'Montserrat', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+.navbar { background: linear-gradient(90deg, #151824, #0e0f14) !important; }
+.table thead th { background:#1a1f2e; color:#cdd4e1; border-color:#2a3146; }
+.table tbody td { border-color:#2a3146; }
+
+/* Chips de vigencia basados en clases que ponemos desde JS */
+.vig-ok   { background: var(--vig-ok-bg)   !important; color: var(--vig-ok-fg)   !important; }
+.vig-mid  { background: var(--vig-mid-bg)  !important; color: var(--vig-mid-fg)  !important; }
+.vig-warn { background: var(--vig-warn-bg) !important; color: var(--vig-warn-fg) !important; }
+.vig-bad  { background: var(--vig-bad-bg)  !important; color: var(--vig-bad-fg)  !important; }
+
+/* Botones acción: outline por defecto; verde cuando hay docs */
+.btn-outline-primary { --bs-btn-color: var(--comp-azul); --bs-btn-border-color: var(--comp-azul); }
+.btn-success { background: var(--triada-verde); border-color: var(--triada-verde); color:#10200a; }

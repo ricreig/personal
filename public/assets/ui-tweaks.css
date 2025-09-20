@@ -1,0 +1,327 @@
+/* ============ CONTROL REGIONAL — UI TWEAKS (oscuro legible) ============ */
+
+/* ---------- Variables de tema ---------- */
+:root{
+  --bulma-primary: #3a63a6;    
+  --bg:            #0e1117;   /* fondo general */
+  --bg-2:          #141824;   /* tarjetas/paneles */
+  --bg-3:          #1b2130;   /* inputs, headers de tabla */
+  --text:          #e8eef2;   /* texto principal */
+  --text-2:        #b9c2cf;   /* texto secundario */
+  --muted:         #7f8a9c;
+  --border:        rgba(255,255,255,.06);
+  --shadow:        0 12px 30px rgba(0,0,0,.45);
+  --primary:       #3a63a6;
+  --primary-600:   #335997;
+  --primary-700:   #2a4c82;
+  --primary-200:   #a5b9e3;
+  --ok:            #37b26c;
+  --info:          #6aa8ff;
+  --warn:          #f2c24f;
+  --danger:        #e25b5b;
+  --radius:        14px;
+}
+
+/* Tipografía/tamaños agradables */
+html{ background: var(--bg); }
+body{
+  background: transparent;
+  color: var(--text);
+  font-size: .75rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+@media (min-width: 992px){
+  body{ font-size: .75rem; }
+}
+
+/* Gradiente sutil al fondo (no invasivo) */
+html::before{
+  content: "";
+  position: fixed; inset: 0; z-index: -1;
+  background: radial-gradient(1200px 400px at 0% 0%, #141a27 0%, #0e1117 60%);
+}
+
+/* ---------- Navbar ---------- */
+.navbar{
+  background: linear-gradient(90deg, #151a27, #0e1117) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.navbar .navbar-brand,
+.navbar .nav-link{ color: var(--text) !important; }
+.navbar .dropdown-menu{
+  background: var(--bg-2); border: 1px solid var(--border);
+}
+.navbar .dropdown-item{ color: var(--text-2); }
+.navbar .dropdown-item:hover{ background: #1a2130; color: var(--text); }
+/* Navbar 3 zonas: izquierda / centro / derecha */
+.nav-3up{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: .75rem;
+}
+.nav-3up .nav-left   { justify-self: start; }
+.nav-3up .nav-center { justify-self: center; text-align: center; }
+.nav-3up .nav-right  { justify-self: end; }
+
+
+/* ---------- Cards / contenedores ---------- */
+.card{
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+.card-hero{
+  background: radial-gradient(1100px 380px at 0% 0%, #1b2130 0%, #141824 60%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.card .card-header{
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Títulos/textos ---------- */
+h1,h2,h3,h4,h5{ color: var(--text); letter-spacing:.2px; }
+.text-secondary{ color: var(--text-2) !important; }
+
+/* ---------- Formularios ---------- */
+.form-label{ color: var(--text-2); font-weight: 600; }
+.form-control, .form-select, .input-group-text{
+  border-radius: 12px;
+}
+.form-control::placeholder{ color: #92a0b6; }
+.form-control:focus, .form-select:focus{
+  border-color: var(--primary-200);
+  box-shadow: 0 0 0 .2rem rgba(106,168,255,.12);
+  background: #1e2535;
+  color: var(--text);
+}
+.form-check-input{
+  background: #0f1420; border:1px solid var(--border);
+}
+.form-check-input:checked{
+  background-color: var(--primary); border-color: var(--primary);
+}
+
+/* ---------- Botones ---------- */
+.btn{
+  border-radius: 12px;
+  font-weight: 600;
+}
+.btn-primary{
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.btn-primary:hover{ background: var(--primary-600); border-color: var(--primary-600); }
+.btn-outline-primary{
+  color: var(--primary-200);
+  border-color: #3a63a6;
+  background: rgba(58,99,166,.08);
+}
+.btn-outline-primary:hover{
+  color: #fff; background: var(--primary-700); border-color: var(--primary-700);
+}
+.btn-outline-secondary{
+  color: #cfd6e3; border-color: #465066; background: rgba(255,255,255,.04);
+}
+.btn-outline-secondary:hover{ background:#2a3244; color:#fff; border-color:#56617a; }
+.btn-secondary{ background: #2a3244; border-color:#2a3244; }
+.btn-secondary:hover{ background: #222a3b; border-color:#222a3b; }
+
+/* ---------- Alertas ---------- */
+.alert{
+  border-radius: 12px; border:1px solid var(--border);
+}
+.alert-danger{ background: rgba(226,91,91,.12); color:#ffb4b4; border-color: rgba(226,91,91,.4); }
+.alert-info{ background: rgba(106,168,255,.12); color:#cfe0ff; border-color: rgba(106,168,255,.35); }
+.alert-success{ background: rgba(55,178,108,.12); color:#b9f0ce; border-color: rgba(55,178,108,.35); }
+
+/* ---------- Modales ---------- */
+.modal-content{
+  background: var(--bg-2); color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.modal-header, .modal-footer{
+  border-color: var(--border);
+}
+/* --- FIX Bulma vs Bootstrap modal --- */
+.modal {                   /* fuerza el comportamiento de Bootstrap */
+  position: fixed !important;
+  z-index: 1055 !important;               /* por encima del backdrop */
+}
+.modal.show { 
+  display: block !important;              /* evita 'display:flex' / 'none' de Bulma */
+}
+.modal .modal-dialog { 
+  pointer-events: auto !important;        /* por si Bulma lo anula */
+}
+.modal-backdrop.show {
+  z-index: 1050 !important;               /* debajo del modal */
+}
+
+/* Si Bulma añadió overflow al <html> o <body> con su modal, neutralízalo */
+html.modal-is-active, body.modal-is-active {
+  overflow: auto !important;
+}
+/* ---------- Login ---------- */
+.login-card{
+  border-radius: 18px;
+  background: #101521;
+  border: 1px solid var(--border);
+}
+.login-brand{ background: transparent; }
+.login-body{ background: transparent; }
+
+/* ---------- DataTables ---------- */
+/* ============ DataTables — Tema Oscuro + ScrollX (Control Regional) ============ */
+
+/* Contenedor con scroll lateral */
+.table-wrap{
+  width:100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius);
+  border:1px solid var(--border);
+  background:#0f1420;
+}
+
+/* Tabla principal */
+#tabla{
+  table-layout:auto !important;
+  width:100% !important;
+  background:#0f1420;
+  color:var(--text);
+  font-size:.75rem;
+}
+#tabla.table > :not(caption) > * > *{ padding:.35rem .5rem; }
+
+/* Encabezado */
+#tabla thead th{
+  position:sticky; top:0; z-index:2;
+  background:var(--bg-3) !important;
+  color:var(--text-2) !important;
+  border-bottom:1px solid var(--border) !important;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+/* Celdas / filas */
+#tabla tbody td{
+  border-top:1px solid var(--border);
+  vertical-align:middle;
+  white-space:normal;                 /* que fluya el contenido */
+}
+#tabla tbody tr:nth-child(even){ background:rgba(255,255,255,.01); }
+#tabla tbody tr:hover{ background:rgba(106,168,255,.06); }
+
+/* Integración de wrappers de DataTables con tema oscuro */
+.dataTables_wrapper,
+.dataTables_wrapper .dataTables_scroll,
+.dataTables_wrapper .dataTables_scrollHead,
+.dataTables_wrapper .dataTables_scrollBody,
+table.dataTable,
+table.dataTable.no-footer{
+  background:#0f1420 !important;
+  color:var(--text) !important;
+  border-color:var(--border) !important;
+}
+.dataTables_wrapper .dataTables_scrollBody{
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+table.dataTable{ table-layout:auto !important; width:100% !important; }
+.dataTables_wrapper .dataTables_scrollHeadInner > table,
+.dataTables_wrapper .dataTables_scrollBody > table{ width:100% !important; }
+.dt-scroll-body { display: hidden !important;}
+/* Botonera DataTables (usamos la nuestra en #botoneraDT) */
+.dataTables_filter{ display:none !important; }     /* ocultamos el buscador nativo */
+.dt-buttons{ display:none !important; }           /* oculto por defecto */
+#botoneraDT .dt-buttons{ display:flex !important; gap:.5rem; }
+.dataTables_wrapper .btn{ padding:.45rem .7rem; }
+
+/* Badges de vigencias */
+.badge.bg-ok   { background:#0468BF !important; color:#fff !important; }
+.badge.bg-warn { background:#BF7704 !important; color:#000 !important; }
+.badge.bg-bad  { background:#BF0C04 !important; color:#fff !important; }
+.badge.bg-perm { background:#37b26c !important; color:#062312 !important; font-weight:700; }
+
+/* Acciones compactas en fila */
+.btn-group.btn-group-sm .btn{ padding:.25rem .45rem; }
+
+/* Utilidad: permitir texto largo en columnas específicas */
+#tabla td.wrap{ white-space:normal; }
+
+
+.btn {font-size: .75rem}
+
+.dropdown-menu {
+    --bs-dropdown-font-size: .75rem,
+}
+
+/* (Opcional) coherencia de tipografía general en tablas */
+body, .card, .table{ font-size: .75rem; }
+
+/* badge especial para RTARI permanente */
+.badge.bg-perm{
+  background:#2f855a !important;  /* verde sólido */
+  color:#eafff2 !important;
+  font-weight:700;
+}
+.cursor-pointer{ cursor:pointer; }
+.nowrap { white-space: nowrap; }
+/* Números con ancho tabular + evita quiebres */
+.table .nowrap { white-space: nowrap; }
+.table .tabnums { font-variant-numeric: tabular-nums; }
+
+/* Igualamos altura y alineación vertical */
+.table td { vertical-align: middle; }
+
+/* Evita que RTARI se parta en dos líneas */
+.cell-rtari { white-space: nowrap; }
+
+/* Columnas centradas */
+.dt-center, .has-text-centered { text-align: center !important; }
+
+
+/* Apilado en móvil: logo → título → botonera, todos centrados */
+@media (max-width: 767.98px){
+  .nav-3up{
+    grid-template-columns: 1fr;
+    row-gap: .5rem;
+  }
+  .nav-3up .nav-left,
+  .nav-3up .nav-center,
+  .nav-3up .nav-right{
+    justify-self: center;
+    text-align: center;
+  }
+}
+/* Ajustes responsive mínimos */
+@media (max-width:576px){
+  #tabla{ font-size:.75rem; }
+  #busquedaGlobal{ min-width:180px; }
+}
+
+/* Alinea a la izquierda el contenido del child-row y nuestro wrapper */
+table.dataTable tbody tr.child td.child,
+.dt-details { 
+  text-align: left !important;
+  white-space: normal;       /* por si algo venía con nowrap */
+}
+
+
+
+
+
+
+
+
+
+
+

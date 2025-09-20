@@ -1,0 +1,7 @@
+# Handler PHP 8 local para sueldos:
+<FilesMatch "\.(php4|php5|php3|php2|php|phtml)$">
+  SetHandler application/x-lsphp80
+</FilesMatch>
+php_flag log_errors on
+php_value error_reporting 32767
+php_value error_log "error_log.txt"

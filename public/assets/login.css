@@ -1,0 +1,465 @@
+/* ===========================
+   ui-tweaks.css — master stylesheet
+   =========================== */
+
+/* ---- Paleta + tipografía base ---- */
+:root{ --teal:#156f73; --muted:#6b7b84; }
+
+html,body{
+  font-family:"Montserrat","Helvetica Neue",Arial,sans-serif;
+  color:#1f2d3d; background:#f6f9fb; margin:0;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+}
+/* contenedor al 90%: 5% de margen a cada lado */
+.my-4 {
+    margin-top: .6rem !important;
+}
+/* ---- Header / título ---- */
+header.hero{ 
+	margin-bottom:4px !important; padding-bottom: .3rem !important;}
+header.hero h1{
+  color:#327ABA !important; font-weight:600; letter-spacing:-.2px;
+  line-height:1.15; margin:0 0 .3rem 0; font-size:1.2rem !important;
+}
+header.hero .meta{ font-size:.875rem; line-height:1.2; }
+
+/* Sello “Última actualización” */
+.last-update{
+  color:#2e7d6b; font-size:.65rem; font-style:italic;
+  text-align:center; margin:.35rem 0; opacity:.8;
+}
+
+/* ---- Cards / controles ---- */
+.card{ background:#fff; border:1px solid #e2e8f0; border-radius:.75rem; padding:1rem; }
+.card.compact{ padding:.75rem 1rem !important; }
+
+/* menos separación entre cards contiguas */
+section.card + section.card{ margin-top:.5rem; }
+
+/* collapse pegadito al botón */
+#zipPanel.collapse,
+#zipPanel.collapse.show{ margin-top:.35rem; }
+
+/* Botón “ghost” reutilizable */
+.ghost-toggle,
+button.dt-button, .dt-buttons .dt-button, .dt-ghost, .dt-ghost button{
+  background:#f7f9fa !important; border:1px solid #dfe7ea !important; color:#0f5e61 !important;
+  border-radius:.5rem !important; padding:.20rem .45rem !important;
+  margin:.15rem !important; font-size:.70rem !important; line-height:1.2 !important;
+  box-shadow:0 1px 0 rgba(0,0,0,.03) !important;
+}
+.ghost-toggle:hover,
+.dt-buttons .dt-button:hover{ background:#eef6f7 !important; border-color:#699899 !important; }
+.ghost-toggle .chev{ transition:transform .2s ease; font-size:.95rem; }
+.ghost-toggle[aria-expanded="true"] .chev{ transform:rotate(180deg); }
+
+#btnRefreshAssets,#btnUpload,#btnLimpiar{ font-size:10px !important; line-height:1.2 !important; }
+input[type="file"].form-control.form-control-sm{
+  font-size:10px !important; padding:.25rem .5rem !important; text-align:center;
+}
+
+/* ===========================
+   DataTables (v1/v2)
+   =========================== */
+/* Cuadro de búsqueda DataTables */
+.form-control-sm {
+    padding: .25rem .5rem;
+    font-size: .8rem;
+}
+/* contenedores no recortan popovers */
+div.dt-container, div.dataTables_wrapper, section.card{ overflow:visible !important; }
+
+/* Asegurar que el menú de Buttons sea usable en todas las alturas/pantallas */
+div.dt-button-collection{
+  max-height: min(70vh, 420px);
+  overflow: auto;
+  z-index: 1065; /* por encima de headers sticky; por debajo del modal (1060/1050 si ya los definiste) */
+}
+
+/* En móvil, evita que quede “fuera” hacia los lados */
+@media (max-width: 768px){
+  div.dt-button-collection{
+    left: 10px !important;
+    right: 10px !important;
+  }
+}
+
+div.dt-button-collection .dt-button{
+  display:block; width:100%; text-align:left; padding:.4rem .6rem;
+  border-radius:.4rem; border:0 !important; background:transparent !important; color:#0f5e61 !important;
+}
+div.dt-button-collection .dt-button:hover{ background:#f5fbfc !important; }
+div.dt-button-collection .dt-button.active::before{ content:"✓"; margin-right:.5rem; }
+.dt-button-background{ display:none !important; } /* sin velo gris */
+
+/* Info centrada */
+#tabla_wrapper .dataTables_info{
+  display:block; width:100%; text-align:center; font-size:12px; line-height:1.3;
+  color:#0f5e61; margin:.35rem 0 .25rem;
+}
+
+/* 2a) Reducir el espacio vertical que DataTables mete entre filas de layout */
+#tabla_wrapper.dt-container .dt-layout-row{
+  margin: .25rem 0 !important;          /* default ≈ .5em */
+}
+#tabla_wrapper.dt-container .dt-layout-row:first-of-type{
+  margin-top: 0 !important;             /* quita el hueco inicial */
+}
+
+/* 2b) Si aún ves hueco, es por el padding de la card que contiene la tabla.
+       Reduce SOLO esa card (no afecta a las demás). */
+section.card:has(#tabla_wrapper){
+  padding-top: .5rem !important;        /* tu .card tenía 1rem */
+}
+
+/* (extra defensivo) evita que el wrapper traiga margen accidental */
+#tabla_wrapper{ margin-top: 0 !important; }
+/* ——— Estilo ghost para el texto y select del length menu ——— */
+.dt-container .dt-length label {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--teal);           /* tu color base */
+  background: transparent;
+  gap: .4rem;                   /* separa el texto del select */
+  align-items: center;
+}
+
+.dt-container .dt-length select {
+  margin: .5rem; 
+  font-size:11px; 
+  line-height:1.2;
+  background: #f7f9fa;
+  font-weight: 600;
+  color: #0f5e61;
+  border: 1px solid #dfe7ea;
+  border-radius: 10px;
+  padding: .20rem .75rem .20rem .45rem;
+  padding-right: 1.2rem;
+  min-width: 45px;
+  display: inline-flex;
+  cursor: pointer;
+  text-align: center;
+}
+/* Flecha FA7 */
+.dt-container .dt-length {
+  position: relative;
+}
+.dt-container .dt-length::after {
+  content:"\f107"; 
+  font-family:"Font Awesome 7 Free";
+  font-weight:900;
+  position:absolute;
+  right: .8rem;
+  top:50%;
+  transform:translateY(-50%);
+  pointer-events:none;
+  color: var(--teal);
+  font-size: 12px;
+}
+@media (max-width:768px){
+  .dt-container .dt-length select{
+    min-width:40px;
+    padding-left:.6rem;
+    text-align: center;        
+  }
+  .dt-container .dt-length::after{
+    right:6rem;
+    font-size:11px;
+  }
+}
+/* Encabezados y celdas de la tabla */
+table.dataTable thead th {
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+  padding: 6px 8px !important;
+  text-align: center;
+}
+
+table.dataTable tbody td {
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+  padding: 6px 8px !important;
+}
+
+/* Ocultar iconos de ordenamiento pero mantener función */
+.dataTable > thead > tr > th[class*="sort"]:before,
+.dataTable > thead > tr > th[class*="sort"]:after {
+    content: "" !important;
+}
+
+table.dataTable th.dt-type-numeric, 
+table.dataTable th.dt-type-date, 
+table.dataTable td.dt-type-numeric, 
+table.dataTable td.dt-type-date{
+    text-align: center;
+}
+/* Feedback visual: columna ordenada resaltada */
+table.dataTable thead th.dt-ordering-asc,
+table.dataTable thead th.dt-ordering-desc {
+  color: var(--teal);
+  font-weight: 600;
+}
+
+/* ===== Responsive ===== */
+@media (max-width:768px){
+  #tabla{ width:96% !important; }
+  #tabla th,#tabla td{ font-size:10px !important; padding:3px 4px !important; }
+  table.dataTable thead th{ padding-right:18px !important; }
+}
+@media (max-width:576px){
+  .card{ margin-left:0 !important; margin-right:0 !important; border-radius:14px; }
+  .card.compact{ padding:.75rem 1rem !important; }
+  table.dataTable thead th{ font-size:11px !important; padding:5px 6px !important; }
+  .dt-container table.dataTable thead th.dt-orderable::after,
+  .dt-container table.dataTable thead th.dt-ordering-asc::after,
+  .dt-container table.dataTable thead th.dt-ordering-desc::after,
+  table.dataTable thead th.sorting:before,
+  table.dataTable thead th.sorting:after,
+  table.dataTable thead th.sorting_asc:before,
+  table.dataTable thead th.sorting_asc:after,
+  table.dataTable thead th.sorting_desc:before,
+  table.dataTable thead th.sorting_desc:after
+}
+
+/* ——— Bootstrap Modal: asegurar que no se “recorte” en pantallas altas ——— */
+.modal-backdrop { position: fixed; z-index: 1050 !important; }
+.modal          { position: fixed; z-index: 1060 !important; }
+
+/* ===== DataTables v2 + Bootstrap 5: Paginador estilo "ghost" compacto ===== */
+.dt-container .pagination {
+  --bs-pagination-padding-x: .45rem;
+  --bs-pagination-padding-y: .2rem;
+  --bs-pagination-font-size: .7rem;   /* ≈11px */
+  --bs-pagination-border-radius: .25rem;
+  --bs-pagination-color: var(--teal);
+  --bs-pagination-border-color: #dfe7ea;
+  --bs-pagination-active-bg: #f7f9fa;
+  --bs-pagination-active-border-color: #dfe7ea;
+  --bs-pagination-hover-bg: color-mix(in srgb, var(--teal) 12%, transparent);
+  --bs-pagination-hover-color: var(--teal);
+  --bs-pagination-disabled-color: #9bb1b3;
+  --bs-pagination-disabled-bg: transparent;
+  --bs-pagination-disabled-border-color: #d6e3e5;
+  margin: .15rem 0;
+  justify-content: center; /* centrado */
+  gap: .35rem;
+  border:none !important;           /* ← quita el marco */
+  background: transparent; 
+}
+
+/* Links dentro del paginador */
+.dt-container .pagination .page-link {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  border:1px solid #dfe7ea !important;
+  color: var(--teal);
+  background: transparent;
+  border-radius: .25rem;
+  text-align: center;
+  line-height: 1.1;
+  padding: .2rem .45rem;
+  margin: 0;                   /* elimina margenes heredados */
+  min-width: 28px;             /* asegura botón no tan chico */
+  padding: .25rem .55rem;      /* mantén compacidad */
+  font-size: 11px;
+  border-width: 1px !important;
+}
+
+/* Hover */
+.dt-container .pagination .page-link:hover {
+  background: color-mix(in srgb, var(--teal) 10%, white);
+  color: var(--teal);
+}
+
+/* Página activa */
+.dt-container .pagination .active > .page-link {
+  background: var(--teal);
+  border-color: #dfe7ea;
+  color: #fff;
+}
+
+/* Deshabilitados */
+.dt-container .pagination .disabled > .page-link {
+  color: #9bb1b3;
+  border-color: #d6e3e5;
+  background: transparent;
+  cursor: not-allowed;
+}
+/* ===== DataTables: "Mostrando X a Y de Z registros" en estilo ghost ===== */
+.dt-container .dt-info{
+  display: inline-block;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--teal);
+  background: transparent;
+  padding: .22rem .6rem;
+  margin: .35rem 0;
+  white-space: nowrap;          /* evita saltos feos */
+}
+
+/* opcional: centrado debajo de la tabla */
+.dt-container .dt-layout-row:has(.dt-info){
+  justify-content: center;      /* requiere navegadores modernos */
+}
+@media (max-width: 768px) {
+  .dt-container .dt-info {
+    text-align: center !important;
+    display: block !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+/* PIN estilo ghost */
+.pincode-input-container input {
+  width: 2.2rem;
+  height: 2.5rem;
+  margin: 0 .25rem;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0f5e61;
+  border: 1px solid #dfe7ea;
+  border-radius: .5rem;
+  background: #f7f9fa;
+  box-shadow: 0 1px 0 rgba(0,0,0,.05);
+  transition: all .2s ease;
+}
+
+/* Hover y foco */
+.pincode-input-container input:focus,
+.pincode-input-container input:hover {
+  border-color: #699899;
+  background: #eef6f7;
+  outline: none;
+}
+
+/* Cuando ya está lleno el campo */
+.pincode-input-container input.filled {
+  border-color: #0f5e61;
+  background: #fff;
+}
+
+.pin-gate{ display:flex; flex-direction:column; align-items:center; }
+.pin-row{ display:flex; gap:.5rem; }
+
+.pin-digit {
+  width: 34px;              /* ancho más compacto */
+  height: 34px;             /* alto más compacto */
+  text-align: center;
+  font-size: 16px;          /* tamaño de número moderado */
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid #dfe7ea;
+  border-radius: .4rem;
+  background: #f7f9fa;
+  color: #0f5e61;
+  outline: none;
+  padding: 0;
+}
+
+.pin-digit:focus {
+  border-color: #0f5e61;
+  box-shadow: 0 0 0 2px rgba(15,94,97,0.15);
+}
+
+.pin-msg{
+  margin-top:.5rem; font-size:.875rem; text-align:center; min-height:1.2em;
+}
+.pin-msg.text-danger{ color:#dc3545 !important; }
+.pin-msg.text-success{ color:#198754 !important; }
+
+/* Contenedor general del gate PIN */
+#pinGate {
+  display: flex;
+  flex-direction: column;   /* apila filas + botón */
+  align-items: center;      /* centra horizontal */
+  justify-content: center;  /* centra vertical si el padre tiene altura */
+  gap: .4rem;
+  margin: 0;
+  text-align: center;
+}
+
+/* Fila de dígitos */
+#pinGate .pin-row {
+  display: flex;
+  justify-content: center;
+  gap: .4rem;
+}
+
+/* Inputs estilo ghost */
+#pinGate .pin-digit {
+  width: 38px;
+  height: 40px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0f5e61;
+  border: 1px solid #dfe7ea;
+  border-radius: .5rem;
+  background: #f7f9fa;
+  outline: none;
+}
+
+#pinGate .pin-digit:focus {
+  border-color: #0f5e61;
+  box-shadow: 0 0 0 2px rgba(15,94,97,0.15);
+}
+
+/* Mensaje debajo */
+#pinMsg {
+  margin-top: .4rem;
+  font-size: .8rem;
+  color: #dc3545; /* rojo */
+  text-align: center;
+}
+
+/* Oculta el botón nativo de borrar en buscadores WebKit/Blink (iOS/Android/Chrome) */
+input[type="search"]::-webkit-search-cancel-button{
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Oculta el clear nativo en Edge/IE */
+input[type="search"]::-ms-clear{
+  display:none;
+  width:0;
+  height:0;
+}
+
+/* (Opcional) evita estilos nativos de Safari que vuelven a mostrar la X */
+input[type="search"]{
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Permite que la tarjeta crezca un poco en pantallas grandes */
+@media (min-width: 992px){
+  .login-card{ max-width: 520px; }
+}
+
+/* Escala del logo horizontal en desktop */
+@media (min-width: 768px){
+  .login-brand picture img{ max-width: 420px; }
+}
+@media (min-width: 1200px){
+  .login-brand picture img{ max-width: 480px; }
+}
+@media (min-width: 1400px){
+  .login-brand picture img{ max-width: 520px; } /* coincide con el @2x */
+}
+
+:root {
+  --font-sans: 'Montserrat', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+               'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+}
