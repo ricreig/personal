@@ -50,8 +50,8 @@ if (!$u) {
 
 /* Switches nativos: compactos + borde cuando están apagados */
 .form-switch .form-check-input {
-  width: 2.3rem;
-  height: 1.2rem;
+  width: 1.7rem;
+  height: 0.9rem;
   cursor: pointer;
   border: 1px solid rgba(255,255,255,.25);
 }
@@ -123,8 +123,9 @@ if (!$u) {
   </style>
 </head>
 <body>
-<nav class="navbar border-bottom mb-4">
+<nav class="navbar border-bottom">
   <div class="container-fluid nav-3up">
+
     <!-- IZQUIERDA: LOGO -->
     <div class="nav-left">
       <a href="index.php" class="d-inline-block">
@@ -137,18 +138,21 @@ if (!$u) {
           style="height:auto;max-height:80px">
       </a>
     </div>
+
     <!-- CENTRO: TÍTULO -->
     <div class="nav-center">
       <a class="navbar-brand fw-semibold m-0 text-center" href="index.php">
         Control Regional de Personal
       </a>
+    </div>
+
     <!-- DERECHA: BOTONERA / MENÚ USUARIO -->
     <div class="nav-right d-flex align-items-center justify-content-end gap-2">
       <?php if (function_exists('is_admin') && is_admin()): ?>
         <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
-        <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Diagnóstico</a>
+        <a class="btn btn-outline-primary btn-sm" href="/public/index.php">Inicio</a>
       <?php endif; ?>
-      <a class="btn btn-outline-primary btn-sm" href="/public/index.php">Inicio</a>
+      <a class="btn btn-outline-primary btn-sm" href="/public/prestaciones.php">Prestaciones</a>
       <div class="dropdown">
         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           <?= htmlspecialchars($u['nombre'] ?? $u['email'] ?? 'Usuario') ?>
@@ -160,6 +164,7 @@ if (!$u) {
         </ul>
       </div>
     </div>
+
   </div>
 </nav>
 
@@ -174,7 +179,7 @@ if (!$u) {
       </div>
       <div class="d-flex align-items-center gap-2 flex-wrap toolbar-gap">
         <div class="btn-group me-2" role="group" aria-label="Vista" id="modeSwitch">
-          <button type="button" class="btn btn-sm btn-primary active" data-mode="persona">Persona</button>
+          <button type="button" class="btn btn-sm btn-primary" data-mode="persona">Persona</button>
           <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="anio">Año</button>
         </div>
 
@@ -184,52 +189,32 @@ if (!$u) {
         <div id="anioPersonaWrap" class="me-2" style="min-width:160px">
           <select id="anioPersonaSelect" class="form-select" aria-label="Año (persona)"></select>
         </div>
+        <div id="personaanioWrap" class="me-2 d-none" style="min-width:320px">
+          <select id="personaanioSelect" class="form-select" aria-label="Trabajador (anio)" disabled></select>
+        </div>
         <div id="anioSelectWrap" class="me-2 d-none" style="min-width:160px">
           <select id="anioSelect" class="form-select" aria-label="Año"></select>
         </div>
         <div class="dropdown me-2">
-          <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="oaciDropdown" data-bs-toggle="dropdown" aria-expanded="false">Estaciones</button>
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="oaciDropdown" data-bs-toggle="dropdown" aria-expanded="false">Filtrar Estaciones</button>
           <div class="dropdown-menu p-3 dropdown-menu-end" aria-labelledby="oaciDropdown" style="min-width:280px;max-height:260px;overflow:auto">
-            <div class="form-check form-switch all mb-2">
-              <input class="form-check-input all" type="checkbox" role="switch" id="oaciAll">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" role="switch" id="oaciAll">
               <label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
             <div id="oaciList"></div>
         </div>
       </div>
-      <div id="prestError" class="alert alert-warning d-none mb-3"></div>
-      <div class="card card-table" id="vacPersonaSummaryWrap">
-        <div class="card-body">
-          <div class="mb-4">
-            <div class="text-secondary small mb-2" id="vacPersonaSummaryMeta">Resumen anual</div>
-            <div class="table-responsive">
-              <table class="table table-sm table-striped align-middle" id="tblVacPersonaSummary">
-                <thead><tr><th>Año</th><th>Asignadas VAC</th><th>Asignadas PR</th><th>Asignadas ANT</th><th>Usadas VAC</th><th>Usadas PR</th><th>Usadas ANT</th><th>Restan VAC</th><th>Restan PR</th><th>Restan ANT</th><th>Flags</th></tr></thead>
-                <tbody><tr><td colspan="11" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-          <div>
-            <div class="text-secondary small fw-semibold mb-2">Movimientos registrados</div>
-            <div class="sticky-wrap">
-              <table class="table table-sm table-striped table-hover align-middle" id="tblVacPersonaMov">
-                <thead><tr><th>Año</th><th>Tipo</th><th>Periodo</th><th>Inicia</th><th>Reanuda</th><th>Días</th><th>Restan</th><th>Observaciones</th></tr></thead>
-                <tbody><tr><td colspan="8" class="text-secondary">Sin datos…</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-  						  <input class="form-check-input all" type="checkbox" role="switch" id="oaciAll"><label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
+
 						  </div>
                   <div id="oaciList"></div>
                 </div>
               </div>
             </div>
-          </div>
+
 
 
       <!-- Tabs -->
-      <ul class="nav nav-tabs mt-3" id="prestTabs" role="tablist">
+      <ul class="nav nav-tabs mt-2" id="prestTabs" role="tablist">
         <li class="nav-item" role="presentation">
           <button class="nav-link active" id="tab-pecos" data-bs-toggle="tab" data-bs-target="#pane-pecos" type="button" role="tab" aria-controls="pane-pecos" aria-selected="true">Días Economicos (PECO)</button>
         </li>
@@ -247,7 +232,7 @@ if (!$u) {
         <!-- PECOs -->
         <div class="tab-pane fade show active" id="pane-pecos" role="tabpanel" aria-labelledby="tab-pecos">
           <div id="pecosPersona">
-            <div class="card card-table mt-3">
+            <div class="card card-table">
               <div class="card-header fw-semibold">Días Economicos (PECO) — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblPecosPersona">
@@ -258,7 +243,7 @@ if (!$u) {
             </div>
           </div>
           <div id="pecosAnio" class="d-none">
-            <div class="card card-table mt-3">
+            <div class="card card-table">
               <div class="card-header fw-semibold">Días Economicos (PECO) — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblPecosYear">
@@ -273,7 +258,7 @@ if (!$u) {
         <!-- TXT -->
         <div class="tab-pane fade" id="pane-txt" role="tabpanel" aria-labelledby="tab-txt">
           <div id="txtPersona">
-            <div class="card card-table mt-3">
+            <div class="card card-table">
               <div class="card-header fw-semibold">Días Acumulables — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblTxtPersona">
@@ -284,7 +269,7 @@ if (!$u) {
             </div>
           </div>
           <div id="txtAnio" class="d-none">
-            <div class="card card-table mt-3">
+            <div class="card card-table">
               <div class="card-header fw-semibold">Días Acumulables — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblTxtYear">
@@ -299,7 +284,7 @@ if (!$u) {
         <!-- Vacaciones -->
         <div class="tab-pane fade" id="pane-vac" role="tabpanel" aria-labelledby="tab-vac">
           <div id="vacPersona">
-            <div class="card card-table mt-3">
+            <div class="card card-table">
               <div class="card-header fw-semibold">Vacaciones — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblVacPersona">
@@ -310,7 +295,7 @@ if (!$u) {
             </div>
           </div>
           <div id="vacAnio" class="d-none">
-            <div class="card card-table mt-3">
+            <div class="card card-table">
               <div class="card-header fw-semibold">Vacaciones — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblVacYear">
@@ -325,7 +310,7 @@ if (!$u) {
         <!-- Incapacidades -->
         <div class="tab-pane fade" id="pane-inc" role="tabpanel" aria-labelledby="tab-inc">
           <div id="incPersona">
-            <div class="card card-table mt-3">
+            <div class="card card-table">
               <div class="card-header fw-semibold">Incapacidades — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblIncPersona">
@@ -336,7 +321,7 @@ if (!$u) {
             </div>
           </div>
           <div id="incAnio" class="d-none">
-            <div class="card card-table mt-3">
+            <div class="card card-table">
               <div class="card-header fw-semibold">Incapacidades — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblIncYear">
@@ -349,6 +334,7 @@ if (!$u) {
         </div>
 
       </div><!-- /tab-content -->
+                </div>
     </div>
   </div>
 </div>

@@ -18,6 +18,8 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     personaYearWrap: document.getElementById('anioPersonaWrap'),
     personaYearSelect: document.getElementById('anioPersonaSelect'),
     yearWrap: document.getElementById('anioSelectWrap'),
+    yearpersonaWrap: document.getElementById('personaanioWrap'),
+    yearpersonaSelect: document.getElementById('personaanioSelect'),
     yearSelect: document.getElementById('anioSelect'),
     oaciAll: document.getElementById('oaciAll'),
     oaciList: document.getElementById('oaciList'),
@@ -71,26 +73,37 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     return active.length ? active : state.init.stations.slice();
   }
 
-  function toggleModeElements() {
-    const personaMode = state.mode === 'persona';
-    if (el.personaWrap) el.personaWrap.classList.toggle('d-none', !personaMode);
-    if (el.personaYearWrap) el.personaYearWrap.classList.toggle('d-none', !personaMode);
-    if (el.yearWrap) el.yearWrap.classList.toggle('d-none', personaMode);
-    if (el.pecosPersona) el.pecosPersona.classList.toggle('d-none', !personaMode);
-    if (el.pecosYear) el.pecosYear.classList.toggle('d-none', personaMode);
-    if (el.txtPersona) el.txtPersona.classList.toggle('d-none', !personaMode);
-    if (el.txtYear) el.txtYear.classList.toggle('d-none', personaMode);
-    if (el.vacPersona) el.vacPersona.classList.toggle('d-none', !personaMode);
-    if (el.vacYear) el.vacYear.classList.toggle('d-none', personaMode);
-    if (el.vacSummaryWrap) el.vacSummaryWrap.classList.toggle('d-none', !personaMode);
-    if (el.incPersona) el.incPersona.classList.toggle('d-none', !personaMode);
-    if (el.incYear) el.incYear.classList.toggle('d-none', personaMode);
-    el.modeBtns.forEach((btn) => {
-      const mode = btn.getAttribute('data-mode');
-      btn.classList.toggle('btn-primary', mode === state.mode);
-      btn.classList.toggle('btn-outline-secondary', mode !== state.mode);
-    });
-  }
+function toggleModeElements() {
+  const personaMode = state.mode === 'persona';
+
+  // Mantener visible el campo de nombre; solo deshabilitar en modo "Año"
+  if (el.personaWrap) el.personaWrap.classList.remove('d-none');
+  if (el.personaSelect) el.personaSelect.toggleAttribute('disabled', !personaMode);
+
+  if (el.personaYearWrap) el.personaYearWrap.classList.toggle('d-none', !personaMode);
+  if (el.yearWrap) el.yearWrap.classList.toggle('d-none', personaMode);
+
+  // Si quieres mostrar también el "Trabajador (anio)" siempre visible pero deshabilitado:
+  // if (el.yearpersonaWrap) el.yearpersonaWrap.classList.remove('d-none');
+  // if (el.yearpersonaSelect) el.yearpersonaSelect.toggleAttribute('disabled', true);
+
+  if (el.pecosPersona) el.pecosPersona.classList.toggle('d-none', !personaMode);
+  if (el.pecosYear) el.pecosYear.classList.toggle('d-none', personaMode);
+  if (el.txtPersona) el.txtPersona.classList.toggle('d-none', !personaMode);
+  if (el.txtYear) el.txtYear.classList.toggle('d-none', personaMode);
+  if (el.vacPersona) el.vacPersona.classList.toggle('d-none', !personaMode);
+  if (el.vacYear) el.vacYear.classList.toggle('d-none', personaMode);
+  if (el.vacSummaryWrap) el.vacSummaryWrap.classList.toggle('d-none', !personaMode);
+  if (el.incPersona) el.incPersona.classList.toggle('d-none', !personaMode);
+  if (el.incYear) el.incYear.classList.toggle('d-none', personaMode);
+
+  el.modeBtns.forEach((btn) => {
+    const mode = btn.getAttribute('data-mode');
+    btn.classList.toggle('btn-primary', mode === state.mode);
+    btn.classList.toggle('btn-outline-secondary', mode !== state.mode);
+  });
+}
+
 
   function setMode(mode) {
     if (mode !== 'persona' && mode !== 'anio') return;
