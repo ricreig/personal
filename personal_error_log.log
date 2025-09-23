@@ -1,0 +1,4 @@
+[23-Sep-2025 14:28:39 UTC] PHP Fatal error:  Uncaught Error: Undefined constant "STDOUT" in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/tools/scan_mixed_params.php:38
+Stack trace:
+#0 {main}
+  thrown in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/tools/scan_mixed_params.php on line 38

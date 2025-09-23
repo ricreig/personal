@@ -472,7 +472,7 @@ pre{white-space:pre-wrap; background:#0b0e14; border:1px solid #22293a; padding:
     </div>
 
         <!-- Logs recientes (por carpeta) con colores por frescura -->
-    <div class="card col-12">
+    <div class="card col-8">
       <h3>Logs recientes (por carpeta)</h3>
       <?php if ($logs['items']): ?>
         <?php foreach ($logs['items'] as $item):
@@ -520,8 +520,10 @@ pre{white-space:pre-wrap; background:#0b0e14; border:1px solid #22293a; padding:
         </table>
       </div>
     </div>
+
+  <div class="col-6" style="display:flex; flex-direction:column; gap:12px;">
         <!-- API -->
-    <div class="card col-4">
+    <div class="card" style="flex:1;">
       <h3>API</h3>
       <div class="kv">
         <div>Ubicación FS</div><div><strong><?=htmlspecialchars($api_location)?></strong></div>
@@ -537,7 +539,7 @@ pre{white-space:pre-wrap; background:#0b0e14; border:1px solid #22293a; padding:
     </div>
 
     <!-- DOCS -->
-    <div class="card col-4">
+    <div class="card" style="flex:1;">
       <h3>DOCS</h3>
       <div class="kv">
         <div>Ubicación FS</div><div><strong><?=htmlspecialchars($docs_location)?></strong></div>
@@ -547,8 +549,11 @@ pre{white-space:pre-wrap; background:#0b0e14; border:1px solid #22293a; padding:
         <?php endif; ?>
       </div>
     </div>
+    </div>
+
+
     <!-- Checks del entorno + whoami (whoami inline) -->
-    <div class="card col-6" id="envCard">
+    <div class="card col-12" id="envCard">
       <h3>Checks del entorno</h3>
       <div class="badges" style="margin-bottom:6px">
         <?php foreach ($checks as $c): ?>

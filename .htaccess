@@ -4,4 +4,4 @@
 </FilesMatch>
 php_flag log_errors on
 php_value error_reporting 32767
-php_value error_log "/home/u695435470/domains/atiscsl.esy.es/public_html/unificado/personal_error_log.txt"
+php_value error_log "/home/u695435470/domains/atiscsl.esy.es/public_html/unificado/personal_error_log.log"
