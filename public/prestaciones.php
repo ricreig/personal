@@ -125,7 +125,6 @@ if (!$u) {
 <body>
 <nav class="navbar border-bottom mb-4">
   <div class="container-fluid nav-3up">
-
     <!-- IZQUIERDA: LOGO -->
     <div class="nav-left">
       <a href="index.php" class="d-inline-block">
@@ -138,82 +137,88 @@ if (!$u) {
           style="height:auto;max-height:80px">
       </a>
     </div>
-
     <!-- CENTRO: TÍTULO -->
     <div class="nav-center">
       <a class="navbar-brand fw-semibold m-0 text-center" href="index.php">
         Control Regional de Personal
       </a>
-    </div>
-
     <!-- DERECHA: BOTONERA / MENÚ USUARIO -->
     <div class="nav-right d-flex align-items-center justify-content-end gap-2">
       <?php if (function_exists('is_admin') && is_admin()): ?>
         <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
         <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Diagnóstico</a>
-      <?php endif; ?>      <a class="btn btn-outline-primary btn-sm" href="/public/index.php">Inicio</a>
-            <div class="d-flex align-items-center gap-2 flex-wrap toolbar-gap">
-              <div id="personaSelectWrap" class="me-2" style="min-width:280px">
-              <div id="anioPersonaWrap" class="me-2" style="min-width:160px">
-                <select id="anioPersonaSelect" class="form-select" aria-label="Año (persona)"></select>
-              </div>
-
-                                                <div class="form-check form-switch all mb-2">
-                                                  <input class="form-check-input all" type="checkbox" role="switch" id="oaciAll"><label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
-                                                  </div>
-          <div id="prestError" class="alert alert-warning d-none mb-0"></div>
-
-            <div class="card card-table">
-            <div class="card card-table">
-            <div class="card card-table">
-            <div class="card card-table">
-            <div class="card card-table">
-              <div class="card-body">
-                <div class="mb-4">
-                  <div class="text-secondary small mb-2" id="vacPersonaSummaryMeta">Resumen anual</div>
-                  <div class="table-responsive">
-                    <table class="table table-sm table-striped align-middle" id="tblVacPersonaSummary">
-                      <thead><tr><th>Año</th><th>Asignadas VAC</th><th>Asignadas PR</th><th>Asignadas ANT</th><th>Usadas VAC</th><th>Usadas PR</th><th>Usadas ANT</th><th>Restan VAC</th><th>Restan PR</th><th>Restan ANT</th><th>Flags</th></tr></thead>
-                      <tbody><tr><td colspan="11" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
-                    </table>
-                  </div>
-                </div>
-                <div>
-                  <div class="text-secondary small fw-semibold mb-2">Movimientos registrados</div>
-                  <div class="sticky-wrap">
-                    <table class="table table-sm table-striped table-hover align-middle" id="tblVacPersonaMov">
-                      <thead><tr><th>Año</th><th>Tipo</th><th>Periodo</th><th>Inicia</th><th>Reanuda</th><th>Días</th><th>Restan</th><th>Observaciones</th></tr></thead>
-                      <tbody><tr><td colspan="8" class="text-secondary">Sin datos…</td></tr></tbody>
-                    </table>
-                  </div>
-                </div>
-            <div class="card card-table">
-                  <thead><tr><th>Estación</th><th>Trabajador</th><th>Asignadas VAC</th><th>Asignadas PR</th><th>Asignadas ANT</th><th>Usadas VAC</th><th>Usadas PR</th><th>Usadas ANT</th><th>Restan VAC</th><th>Restan PR</th><th>Restan ANT</th><th>Flags</th></tr></thead>
-            <div class="card card-table">
-            <div class="card card-table">
-            <div class="d-flex align-items-center gap-3 mb-3">
-    <div>
-      <h1 class="h4 mb-1">Personal</h1>
-      <div class="text-secondary small">Sistema para Gestión de Capital Humano</div>
+      <?php endif; ?>
+      <a class="btn btn-outline-primary btn-sm" href="/public/index.php">Inicio</a>
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          <?= htmlspecialchars($u['nombre'] ?? $u['email'] ?? 'Usuario') ?>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="account.php">Mi cuenta</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="logout.php">Cerrar sesión</a></li>
+        </ul>
+      </div>
     </div>
-            </div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <div class="btn-group me-2" role="group" aria-label="Vista" id="modeSwitch">
-                <button type="button" class="btn btn-sm btn-primary active" data-mode="persona">Persona</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="anio">Año</button>
-              </div>
+  </div>
+</nav>
 
-              <div id="personaSelectWrap" class="me-2" style="min-width:320px">
-                <select id="personaSelect" class="form-select" aria-label="Trabajador"></select>
-              </div>
-              <div id="anioSelectWrap" class="me-2 d-none" style="min-width:160px">
-                <select id="anioSelect" class="form-select" aria-label="Año"></select>
-              </div>
-              <div class="dropdown me-2">
-                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="oaciDropdown" data-bs-toggle="dropdown" aria-expanded="false">Estaciones</button>
-                <div class="dropdown-menu p-3 dropdown-menu-end" aria-labelledby="oaciDropdown" style="min-width:280px;max-height:260px;overflow:auto">
-						
-						<div class="form-check form-switch all mb-2">
+<div class="container-fluid py-4">
+  <div class="card card-hero mb-3">
+    <div class="card-body">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div>
+          <h1 class="h4 mb-1">Personal</h1>
+          <div class="text-secondary small">Sistema para Gestión de Capital Humano</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap toolbar-gap">
+        <div class="btn-group me-2" role="group" aria-label="Vista" id="modeSwitch">
+          <button type="button" class="btn btn-sm btn-primary active" data-mode="persona">Persona</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="anio">Año</button>
+        </div>
+
+        <div id="personaSelectWrap" class="me-2" style="min-width:320px">
+          <select id="personaSelect" class="form-select" aria-label="Trabajador"></select>
+        </div>
+        <div id="anioPersonaWrap" class="me-2" style="min-width:160px">
+          <select id="anioPersonaSelect" class="form-select" aria-label="Año (persona)"></select>
+        </div>
+        <div id="anioSelectWrap" class="me-2 d-none" style="min-width:160px">
+          <select id="anioSelect" class="form-select" aria-label="Año"></select>
+        </div>
+        <div class="dropdown me-2">
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="oaciDropdown" data-bs-toggle="dropdown" aria-expanded="false">Estaciones</button>
+          <div class="dropdown-menu p-3 dropdown-menu-end" aria-labelledby="oaciDropdown" style="min-width:280px;max-height:260px;overflow:auto">
+            <div class="form-check form-switch all mb-2">
+              <input class="form-check-input all" type="checkbox" role="switch" id="oaciAll">
+              <label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
+            <div id="oaciList"></div>
+        </div>
+      </div>
+      <div id="prestError" class="alert alert-warning d-none mb-3"></div>
+      <div class="card card-table" id="vacPersonaSummaryWrap">
+        <div class="card-body">
+          <div class="mb-4">
+            <div class="text-secondary small mb-2" id="vacPersonaSummaryMeta">Resumen anual</div>
+            <div class="table-responsive">
+              <table class="table table-sm table-striped align-middle" id="tblVacPersonaSummary">
+                <thead><tr><th>Año</th><th>Asignadas VAC</th><th>Asignadas PR</th><th>Asignadas ANT</th><th>Usadas VAC</th><th>Usadas PR</th><th>Usadas ANT</th><th>Restan VAC</th><th>Restan PR</th><th>Restan ANT</th><th>Flags</th></tr></thead>
+                <tbody><tr><td colspan="11" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div class="text-secondary small fw-semibold mb-2">Movimientos registrados</div>
+            <div class="sticky-wrap">
+              <table class="table table-sm table-striped table-hover align-middle" id="tblVacPersonaMov">
+                <thead><tr><th>Año</th><th>Tipo</th><th>Periodo</th><th>Inicia</th><th>Reanuda</th><th>Días</th><th>Restan</th><th>Observaciones</th></tr></thead>
+                <tbody><tr><td colspan="8" class="text-secondary">Sin datos…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
   						  <input class="form-check-input all" type="checkbox" role="switch" id="oaciAll"><label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
 						  </div>
                   <div id="oaciList"></div>

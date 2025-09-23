@@ -29,6 +29,7 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     vacYear: document.getElementById('vacAnio'),
     incPersona: document.getElementById('incPersona'),
     incYear: document.getElementById('incAnio'),
+    vacSummaryWrap: document.getElementById('vacPersonaSummaryWrap'),
     tables: {
       pecosPersona: document.getElementById('tblPecosPersona'),
       pecosYear: document.getElementById('tblPecosYear'),
@@ -81,6 +82,7 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     if (el.txtYear) el.txtYear.classList.toggle('d-none', personaMode);
     if (el.vacPersona) el.vacPersona.classList.toggle('d-none', !personaMode);
     if (el.vacYear) el.vacYear.classList.toggle('d-none', personaMode);
+    if (el.vacSummaryWrap) el.vacSummaryWrap.classList.toggle('d-none', !personaMode);
     if (el.incPersona) el.incPersona.classList.toggle('d-none', !personaMode);
     if (el.incYear) el.incYear.classList.toggle('d-none', personaMode);
     el.modeBtns.forEach((btn) => {
