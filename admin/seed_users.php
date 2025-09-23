@@ -1,7 +1,6 @@
 <?php
-// /unificado/admin/seed_users.php
 declare(strict_types=1);
-require_once __DIR__ . '/../lib/db.php';
+// /unificado/admin/seed_users.phprequire_once __DIR__ . '/../lib/db.php';
 
 header('Content-Type: text/plain; charset=utf-8');
 

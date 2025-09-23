@@ -1,6 +1,5 @@
 <?php
 declare(strict_types=1);
-
 // Arranque común
 require_once dirname(__DIR__,1) . '/lib/bootstrap_public.php';
 require_once dirname(__DIR__,1) . '/lib/paths.php';

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * diagnose.php — Panel de diagnóstico integral (dashboard)
  * Ubicación: /unificado/public/diagnose.php
@@ -8,10 +9,7 @@
  *  ?write_test=1               -> prueba de escritura en docs/
  *  ?json=1                     -> salida JSON (incluye logs)
  *  ?logs=0                     -> desactivar escaneo de logs
- */
-
-declare(strict_types=1);
-@ini_set('display_errors','0');
+ */@ini_set('display_errors','0');
 @ini_set('log_errors','1');
 
 $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';

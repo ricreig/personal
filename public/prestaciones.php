@@ -48,41 +48,80 @@ if (!$u) {
       .tbl-sticky th:nth-child(2), .tbl-sticky td:nth-child(2) { left: 8rem; }
     }
 
-    /* Switches nativos: slightly larger + border when off */
-    .form-switch .form-check-input {
-      width: 3rem; height: 1.6rem;
-      cursor: pointer;
-      border: 2px solid rgba(255,255,255,.25);
-    }
-    .form-switch .form-check-input:checked {
-      background-color: #1e7e34; /* verde Bootstrap-ish */
-      border-color: #1e7e34;
-    }
-    .form-switch .form-check-input:focus { box-shadow: none; }
+/* Switches nativos: compactos + borde cuando están apagados */
+.form-switch .form-check-input {
+  width: 2.3rem;
+  height: 1.2rem;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,.25);
+}
+.form-switch .form-check-input:checked {
+  background-color: #1e7e34; /* verde Bootstrap-ish */
+  border-color: #1e7e34;
+}
+.form-switch .form-check-input .all:checked {
+  background-color: #ffc107; /* amarillo Bootstrap-ish */
+  border-color: #0dcaf0;
+}
+.form-switch .form-check-input:focus { box-shadow: none; }
 
-    .switch-label {
-      font-weight: 600; letter-spacing:.3px;
-      display:inline-block; min-width:4.5rem; text-align:center;
-    }
+.switch-label {
+  font-weight: 600;
+  letter-spacing: .3px;
+  display: inline-block;
+  min-width: 4.5rem;
+  text-align: center;
+  margin-left: 2px;
+}
 
-    /* Tabs sobrios */
-    .nav-tabs .nav-link { color: var(--bs-body-color); border-color: transparent; }
-    .nav-tabs .nav-link.active {
-      background: #141a26; border-color: rgba(255,255,255,.1);
-    }
+/* Distribución en varias columnas para no cascada */
+#oaciList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem .8rem;
+}
+#oaciList .form-check {
+  flex: 1 1 45%; /* 2 columnas; cambia a 30% para 3 columnas */
+}
+#oaciList .form-check-label {
+  font-size: .9rem;
+}
+.card .card-table .card-header {
+	border-radius: 0 15px 15px 15px;
+	margin-top: 0px !important;
+}
   </style>
 </head>
 <body>
-<nav class="navbar border-bottom">
+<nav class="navbar border-bottom mb-4">
   <div class="container-fluid nav-3up">
-    <div class="nav-left"><a class="navbar-brand" href="index.php">Control Regional</a></div>
-    <div class="nav-center"><span class="navbar-text">Prestaciones</span></div>
+
+    <!-- IZQUIERDA: LOGO -->
+    <div class="nav-left">
+      <a href="index.php" class="d-inline-block">
+        <img
+          src="assets/SENEAM_Logo_H.webp"
+          srcset="assets/SENEAM_Logo_H.webp 260w, assets/SENEAM_Logo_H@2x.webp 520w"
+          sizes="(max-width: 768px) 180px, 260px"
+          alt="SENEAM" width="260" height="76"
+          fetchpriority="high" loading="eager" decoding="async"
+          style="height:auto;max-height:80px">
+      </a>
+    </div>
+
+    <!-- CENTRO: TÍTULO -->
+    <div class="nav-center">
+      <a class="navbar-brand fw-semibold m-0 text-center" href="index.php">
+        Control Regional de Personal
+      </a>
+    </div>
+
+    <!-- DERECHA: BOTONERA / MENÚ USUARIO -->
     <div class="nav-right d-flex align-items-center justify-content-end gap-2">
       <?php if (function_exists('is_admin') && is_admin()): ?>
         <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
         <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Diagnóstico</a>
-      <?php endif; ?>
-      <a class="btn btn-outline-primary btn-sm" href="/public/index.php">Inicio</a>
+      <?php endif; ?>      <a class="btn btn-outline-primary btn-sm" href="/public/index.php">Inicio</a>
       <div class="dropdown">
         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           <?= htmlspecialchars($u['nombre'] ?? $u['email'] ?? 'Usuario') ?>
@@ -94,82 +133,60 @@ if (!$u) {
         </ul>
       </div>
     </div>
+
   </div>
 </nav>
-
-<div class="container py-4 tool-wrap">
-  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 toolbar-gap">
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+            <div class="d-flex align-items-center gap-3 mb-3">
     <div>
-      <h1 class="h4 mb-1">Prestaciones · Personal</h1>
-      <div class="text-secondary small">Control de prestaciones disponibles y asignadas al personal adscrito.</div>
+      <h1 class="h4 mb-1">Personal</h1>
+      <div class="text-secondary small">Sistema para Gestión de Capital Humano</div>
     </div>
-  </div>
-
-  <!-- Toolbar -->
-  <div class="card card-hero mb-3">
-    <div class="card-body">
-      <div class="tool-controls">
-        <!-- Estaciones -->
-        <div class="mb-3">
-          <label class="form-label fw-semibold mb-2 d-flex align-items-center gap-2">
-            <span>Estaciones</span>
-            <span class="text-secondary small">— filtrado por permisos del usuario</span>
-          </label>
-
-          <div id="stationsSingle" class="d-none">
-            <span class="oaci-chip" id="singleOaci">—</span>
-          </div>
-
-          <div id="stationsMulti" class="d-none">
-            <div class="d-flex flex-wrap align-items-center gap-3">
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" id="oaciAll" checked>
-                <label class="form-check-label" for="oaciAll">Seleccionar todo</label>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <div class="btn-group me-2" role="group" aria-label="Vista" id="modeSwitch">
+                <button type="button" class="btn btn-sm btn-primary active" data-mode="persona">Persona</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="anio">Año</button>
               </div>
-              <div id="oaciList" class="d-flex flex-wrap gap-3"></div>
+
+              <div id="personaSelectWrap" class="me-2" style="min-width:320px">
+                <select id="personaSelect" class="form-select" aria-label="Trabajador"></select>
+              </div>
+              <div id="anioSelectWrap" class="me-2 d-none" style="min-width:160px">
+                <select id="anioSelect" class="form-select" aria-label="Año"></select>
+              </div>
+              <div class="dropdown me-2">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="oaciDropdown" data-bs-toggle="dropdown" aria-expanded="false">Estaciones</button>
+                <div class="dropdown-menu p-3 dropdown-menu-end" aria-labelledby="oaciDropdown" style="min-width:280px;max-height:260px;overflow:auto">
+						
+						<div class="form-check form-switch all mb-2">
+  						  <input class="form-check-input all" type="checkbox" role="switch" id="oaciAll"><label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
+						  </div>
+                  <div id="oaciList"></div>
+                </div>
+              </div>
             </div>
-            <div class="text-secondary small mt-2">Activa/desactiva estaciones. Por defecto todas quedan activas.</div>
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Switch Persona / Año + Selectores -->
-        <div class="row gy-2 align-items-center">
-          <div class="col-12 col-lg-auto">
-            <div class="btn-group" role="group" aria-label="Modo de vista" id="modeSwitch">
-              <button type="button" class="btn btn-primary" data-mode="persona">Persona</button>
-              <button type="button" class="btn btn-outline-secondary" data-mode="anio">Año</button>
-            </div>
           </div>
 
-          <div class="col-12 col-lg d-flex align-items-center gap-2" id="personaSelectWrap">
-            <label for="personaSelect" class="form-label m-0">Trabajador</label>
-            <select id="personaSelect" class="form-select" style="min-width:260px">
-              <option value="">Seleccione…</option>
-            </select>
-          </div>
-
-          <div class="col-12 col-lg d-flex align-items-center gap-2 d-none" id="anioSelectWrap">
-            <label for="anioSelect" class="form-label m-0">Año</label>
-            <select id="anioSelect" class="form-select" style="min-width:200px"></select>
-          </div>
-        </div>
-      </div>
 
       <!-- Tabs -->
       <ul class="nav nav-tabs mt-3" id="prestTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="tab-pecos" data-bs-toggle="tab" data-bs-target="#pane-pecos" type="button" role="tab" aria-controls="pane-pecos" aria-selected="true">PECOs</button>
+          <button class="nav-link active" id="tab-pecos" data-bs-toggle="tab" data-bs-target="#pane-pecos" type="button" role="tab" aria-controls="pane-pecos" aria-selected="true">Días Economicos (PECO)</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-txt" data-bs-toggle="tab" data-bs-target="#pane-txt" type="button" role="tab" aria-controls="pane-txt" aria-selected="false">TXT</button>
+          <button class="nav-link" id="tab-txt" data-bs-toggle="tab" data-bs-target="#pane-txt" type="button" role="tab" aria-controls="pane-txt" aria-selected="false">Días Acumulables (Tiempo x Tiempo)</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-vac" data-bs-toggle="tab" data-bs-target="#pane-vac" type="button" role="tab" aria-controls="pane-vac" aria-selected="false">Vacaciones</button>
+          <button class="nav-link" id="tab-vac" data-bs-toggle="tab" data-bs-target="#pane-vac" type="button" role="tab" aria-controls="pane-vac" aria-selected="false">Vacaciones, P. Recuperacion y Antigüedad</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-inc" data-bs-toggle="tab" data-bs-target="#pane-inc" type="button" role="tab" aria-controls="pane-inc" aria-selected="false">Incapacidades</button>
+          <button class="nav-link" id="tab-inc" data-bs-toggle="tab" data-bs-target="#pane-inc" type="button" role="tab" aria-controls="pane-inc" aria-selected="false">Licencias Medicas (Incapacidades)</button>
         </li>
       </ul>
       <div class="tab-content" id="prestTabsContent">
@@ -177,10 +194,10 @@ if (!$u) {
         <div class="tab-pane fade show active" id="pane-pecos" role="tabpanel" aria-labelledby="tab-pecos">
           <div id="pecosPersona">
             <div class="card card-table mt-3">
-              <div class="card-header fw-semibold">PECOs — Vista por Persona</div>
+              <div class="card-header fw-semibold">Días Economicos (PECO) — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblPecosPersona">
-                  <thead><tr><th>Año</th><th>PECO1</th><th>PECO2</th><th>PECO3</th><th>PECO4</th><th>PECO5</th><th>PECO6</th><th>PECO7</th><th>PECO8</th><th>PECO9</th><th>PECO10</th><th>PECO11</th><th>PECO12</th><th>Editar</th><th>Eliminar</th></tr></thead>
+                  <thead><tr><th>Año</th><th>D-01</th><th>D-02</th><th>D-03</th><th>D-04</th><th>D-05</th><th>D-06</th><th>D-07</th><th>D-08</th><th>D-09</th><th>D-10</th><th>D-11</th><th>D-12</th><th>Editar</th><th>Eliminar</th></tr></thead>
                   <tbody><tr><td colspan="15" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
                 </table>
               </div>
@@ -188,10 +205,10 @@ if (!$u) {
           </div>
           <div id="pecosAnio" class="d-none">
             <div class="card card-table mt-3">
-              <div class="card-header fw-semibold">PECOs — Vista por Año</div>
+              <div class="card-header fw-semibold">Días Economicos (PECO) — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblPecosYear">
-                  <thead><tr><th>Estación</th><th>Trabajador</th><th>PECO1</th><th>PECO2</th><th>PECO3</th><th>PECO4</th><th>PECO5</th><th>PECO6</th><th>PECO7</th><th>PECO8</th><th>PECO9</th><th>PECO10</th><th>PECO11</th><th>PECO12</th><th>Editar</th><th>Eliminar</th></tr></thead>
+                  <thead><tr><th>Estación</th><th>Trabajador</th><th>D-01</th><th>D-02</th><th>D-03</th><th>D-04</th><th>D-05</th><th>D-06</th><th>D-07</th><th>D-08</th><th>D-09</th><th>D-10</th><th>D-11</th><th>D-12</th><th>Editar</th><th>Eliminar</th></tr></thead>
                   <tbody><tr><td class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>
               </div>
@@ -203,10 +220,10 @@ if (!$u) {
         <div class="tab-pane fade" id="pane-txt" role="tabpanel" aria-labelledby="tab-txt">
           <div id="txtPersona">
             <div class="card card-table mt-3">
-              <div class="card-header fw-semibold">TXT — Vista por Persona</div>
+              <div class="card-header fw-semibold">Días Acumulables — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblTxtPersona">
-                  <thead><tr><th>Año</th><th>Jue. Santo</th><th>Vie. Santo</th><th>Madres</th><th>SENEAM/ATC</th><th>Muertos</th><th>Onomástico</th><th>Fecha Nac.</th><th>Editar</th><th>Eliminar</th></tr></thead>
+                  <thead><tr><th>Año</th><th>Jue. Santo</th><th>Vie. Santo</th><th>D. Madres</th><th>SENEAM/ATC</th><th>D. Muertos</th><th>Onomástico</th><th>Fecha Nac.</th><th>Editar</th><th>Eliminar</th></tr></thead>
                   <tbody><tr><td colspan="10" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
                 </table>
               </div>
@@ -214,10 +231,10 @@ if (!$u) {
           </div>
           <div id="txtAnio" class="d-none">
             <div class="card card-table mt-3">
-              <div class="card-header fw-semibold">TXT — Vista por Año</div>
+              <div class="card-header fw-semibold">Días Acumulables — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblTxtYear">
-                  <thead><tr><th>Estación</th><th>Trabajador</th><th>Jue. Santo</th><th>Vie. Santo</th><th>Madres</th><th>SENEAM/ATC</th><th>Muertos</th><th>Onomástico</th><th>Fecha Nac.</th><th>Editar</th><th>Eliminar</th></tr></thead>
+                  <thead><tr><th>Estación</th><th>Trabajador</th><th>Jue. Santo</th><th>Vie. Santo</th><th>D. Madres</th><th>SENEAM/ATC</th><th>D. Muertos</th><th>Onomástico</th><th>Fecha Nac.</th><th>Editar</th><th>Eliminar</th></tr></thead>
                   <tbody><tr><td class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>
               </div>

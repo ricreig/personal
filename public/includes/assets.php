@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // === Helpers de assets (versionado por filemtime y URLs correctas) ===
 
 if (!function_exists('asset__project_root')) {

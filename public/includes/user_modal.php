@@ -1,7 +1,6 @@
 <?php
-// public/includes/user_modal.php
 declare(strict_types=1);
-?>
+// public/includes/user_modal.php?>
 <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">

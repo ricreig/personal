@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
-
-// Encabezados base para JSON y evitar cacheado por proxies
+require_once __DIR__ . '/bootstrap.php';// Encabezados base para JSON y evitar cacheado por proxies
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');

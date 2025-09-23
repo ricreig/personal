@@ -1,7 +1,6 @@
 <?php
-// /unificado/lib/db.php
 declare(strict_types=1);
-
+// /unificado/lib/db.php
 function db(): PDO {
   static $pdo = null;
   if ($pdo) return $pdo;

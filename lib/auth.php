@@ -1,6 +1,5 @@
 <?php
 declare(strict_types=1);
-
 /**
  * Autenticación basada en:
  *  - Tabla app_users (id, email, pass_hash, nombre, role, is_active, control)

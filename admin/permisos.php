@@ -1,6 +1,5 @@
 <?php
 declare(strict_types=1);
-
 // Arranque común (sesión, DB, helpers, rutas y assets)
 require_once dirname(__DIR__) . '/lib/bootstrap_public.php'; // session_boot(), db(), auth, paths
 

@@ -1,3 +1,4 @@
+const API=(typeof window!=='undefined'&&window.API_BASE)?window.API_BASE:'/api';
 /* global $, DataTable, bootstrap */
 (() => {
   // ================================

@@ -1,4 +1,5 @@
-<?php 
+<?php
+declare(strict_types=1);
 echo __DIR__ . '/../lib/guard.php'."</br>";
 echo dirname(__DIR__)."</br>";
 echo dirname(__DIR__,2)."</br>";

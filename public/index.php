@@ -50,9 +50,7 @@ if (!$u) {
       <?php if (function_exists('is_admin') && is_admin()): ?>
         <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
         <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Diagnóstico</a>
-      <?php endif; ?>
-		 <a class="btn btn-outline-primary btn-sm" href="/public/prestaciones.php">Prestaciones</a>
-
+      <?php endif; ?>      <a class="btn btn-outline-primary btn-sm" href="/public/prestaciones.php">Prestaciones</a>
       <div class="dropdown">
         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           <?= htmlspecialchars($u['nombre'] ?? $u['email'] ?? 'Usuario') ?>
@@ -166,8 +164,7 @@ if (!$u) {
         </div>
       </div>
     </div>
-<?php require __DIR__ . '/includes/user_modal.php'; ?>
-<script src="<?= htmlspecialchars(asset_version('assets/user_modal.js')) ?>"></script>
+
 <?php require __DIR__ . '/includes/Foot-js.php'; ?>
 <!-- Toda la lógica de la tabla/documents vive en /public/assets/app.js -->
 </body>

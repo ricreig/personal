@@ -1,14 +1,5 @@
 <?php
-// /lib/paths.php
 declare(strict_types=1);
-
-/**
- * Devuelve [PROJECT_BASE, BASE_URL (public/), API_BASE]
- * PROJECT_BASE = ruta web del proyecto (termina con "/"), por ejemplo: "/unificado/"
- * BASE_URL     = PROJECT_BASE . "public/"
- * API_BASE     = PROJECT_BASE . "api/"   (si api está en root)  ó
- *                BASE_URL . "api/"       (si api estuviera bajo /public)
- */
 function cr_web_paths(): array {
   $script = $_SERVER['SCRIPT_NAME'] ?? '/';
   // ejemplos:

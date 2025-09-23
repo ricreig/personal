@@ -1,6 +1,8 @@
 <?php
-// /unificado/api/bootstrap.php
 declare(strict_types=1);
+require_once dirname(__DIR__).'/lib/bootstrap_public.php';
+// /unificado/api/bootstrap.php
+
 
 // Forzar JSON siempre
 if (!headers_sent()) {

@@ -1,7 +1,6 @@
 <?php
-// Guard PASIVO — no niega al incluirse
 declare(strict_types=1);
-require_once __DIR__ . '/auth.php';
+// Guard PASIVO — no niega al incluirserequire_once __DIR__ . '/auth.php';
 
 function guard_is_api_request(): bool {
   $xrw = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';

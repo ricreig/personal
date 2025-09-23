@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 require_once dirname(__DIR__) . '/lib/guard.php';
 require_once dirname(__DIR__) . '/lib/auth.php';
 require_once dirname(__DIR__) . '/lib/db.php';

@@ -1,0 +1,201 @@
+{
+  "scanned": 63,
+  "changed": 65,
+  "changes": {
+    "error_log.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "index.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "admin/map_estaciones.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "admin/permisos.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "admin/permisos_save.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "admin/seed_users.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "admin/usuarios.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/bootstrap.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/doc_exists.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/doc_upload.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/doc_view.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/empleado_soft_delete.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/filters_meta.php": [
+      "Moved/cleaned declare(strict_types)",
+      "Rewrite tolerant filters_meta.php"
+    ],
+    "api/incapacidades_delete.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/incapacidades_list.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/incapacidades_save.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/pecos_get.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/pecos_list.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/pecos_save.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/pecos_txt_empleados.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/pecos_txt_init.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/pecos_txt_persona.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/pecos_txt_persona_year.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/pecos_txt_save.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/pecos_txt_year.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/ping.php": [
+      "Moved/cleaned declare(strict_types)",
+      "Add JSON header"
+    ],
+    "api/prestaciones_init.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/trabajadores_distinct.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/trabajadores_list.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/txt_get.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/txt_list.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/txt_save.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/user_full.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/vacaciones_calc.php": [
+      "Moved/cleaned declare(strict_types)",
+      "e.oaci→e.estacion"
+    ],
+    "api/vacaciones_list.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "api/vacaciones_save.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "config/seed_users.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "config/setup.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "lib/auth.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "lib/bootstrap_public.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "lib/db.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "lib/guard.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "lib/paths.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "lib/perm.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "lib/session.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "lib/vacaciones_calc.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/account.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/diagnose.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/dir.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/edit_persona.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/force_login.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/index.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/login.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/logout.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/pecos_txt.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/prestaciones.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/probe_control.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/whoami.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/includes/Foot-js.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/includes/HEAD-CSS.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/includes/assets.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/includes/head-css-heredado.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/includes/user_modal.php": [
+      "Moved/cleaned declare(strict_types)"
+    ],
+    "public/assets/prestaciones.js": [
+      "Force API_BASE /api/"
+    ]
+  }
+}

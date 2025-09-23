@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
-
-/**
+require_once __DIR__ . '/bootstrap.php';
+require_auth_api();/**
  * Sirve una vista previa (imagen/pdf) o HEAD para existencia.
  * Uso desde app.js:
  *  - GET  /api/doc_view.php?control=1234&tipo=licencia1

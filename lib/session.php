@@ -1,15 +1,5 @@
 <?php
-// /unificado/lib/session.php
 declare(strict_types=1);
-
-/**
- * Sesión consistente para todo *.ctareig.com
- * - Nombre fijo: CRSESS
- * - Domain: .ctareig.com
- * - Path: /
- * - SameSite: Lax
- * - Secure: true (HTTPS)
- */
 function session_boot(): void {
   if (session_status() === PHP_SESSION_ACTIVE) return;
 
@@ -17,7 +7,7 @@ function session_boot(): void {
   $cookieParams = [
     'lifetime' => 0,
     'path'     => '/',
-    'domain'   => '.ctareig.com', // <- clave para subdominios
+    // <- clave para subdominios
     'secure'   => true,           // exige HTTPS
     'httponly' => true,
     'samesite' => 'Lax',

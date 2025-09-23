@@ -1,8 +1,0 @@
-[20-Sep-2025 04:07:25 UTC] PHP Parse error:  Unclosed '{' on line 13 in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/public/edit_persona.php on line 362
-[20-Sep-2025 04:07:28 UTC] PHP Parse error:  Unclosed '{' on line 13 in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/public/edit_persona.php on line 362
-[20-Sep-2025 04:07:29 UTC] PHP Parse error:  Unclosed '{' on line 13 in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/public/edit_persona.php on line 362
-[20-Sep-2025 04:10:49 UTC] PHP Parse error:  Unclosed '{' on line 13 in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/public/edit_persona.php on line 362
-[20-Sep-2025 04:12:07 UTC] PHP Parse error:  Unclosed '{' on line 13 in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/public/edit_persona.php on line 362
-[20-Sep-2025 04:15:05 UTC] PHP Warning:  Undefined variable $role in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/public/edit_persona.php on line 20
-[20-Sep-2025 06:42:23 UTC] PHP Warning:  Trying to access array offset on value of type null in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/public/pecos_txt.php on line 20
-[20-Sep-2025 06:42:23 UTC] PHP Warning:  Trying to access array offset on value of type null in /home/u695435470/domains/atiscsl.esy.es/public_html/unificado/public/pecos_txt.php on line 34

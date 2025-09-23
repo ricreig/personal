@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
-
-/**
+require_once __DIR__ . '/bootstrap.php';
+require_auth_api();/**
  * Recibe un archivo y lo asocia a (control, tipo).
  * Crea/actualiza registro en `documentos_personal`.
  * Guarda físicamente bajo /unificado/docs/{control}/

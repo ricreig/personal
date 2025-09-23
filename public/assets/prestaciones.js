@@ -1,374 +1,42 @@
-/* Prestaciones module JS — toggles nativos + select all + tabs/toolbar
-   Requires: jQuery, Bootstrap bundle, assets/vendor/jquery.checkbox.js
-*/
+const API_BASE = '/api/';
+
 (function(){
-  const API = (window.API_BASE || '/api/').replace(/\/+$/, '/') ;
-
-  const state = {
-    mode: 'persona', // 'persona' | 'anio'
-    oaci: [],        // active stations
-    personas: [],    // {control,nombres,oaci}
-    years: [],       // [2025, 2024, ... 2017]
-    activeTab: 'pecos', // 'pecos' | 'txt' | 'vac' | 'inc'
-    selectedPersona: '',
-    selectedYear: ''
+  const API = '../api/';
+  const qs = (s,ctx=document)=>ctx.querySelector(s);
+  const qsa = (s,ctx=document)=>Array.prototype.slice.call(ctx.querySelectorAll(s));
+  let INIT = {stations:[], personas:[], years:[]};
+  let MODE = 'persona';
+  const el = {
+    modeBtns: qsa('#modeSwitch [data-mode]'),
+    personaWrap: qs('#personaSelectWrap'), anioWrap: qs('#anioSelectWrap'),
+    personaSel: qs('#personaSelect'), anioSel: qs('#anioSelect'),
+    oaciAll: qs('#oaciAll'), oaciList: qs('#oaciList'),
+    tabs: qs('#prestTabs'),
+    pecosPersonaTbl: qs('#tblPecosPersona'), pecosYearTbl: qs('#tblPecosYear'),
+    txtPersonaTbl: qs('#tblTxtPersona'), txtYearTbl: qs('#tblTxtYear'),
+    vacPersonaTbl: qs('#tblVacPersona'), vacYearTbl: qs('#tblVacYear'),
+    incPersonaTbl: qs('#tblIncPersona'), incYearTbl: qs('#tblIncYear'),
+    txtPersona: qs('#txtPersona'), txtAnio: qs('#txtAnio'),
+    vacPersona: qs('#vacPersona'), vacAnio: qs('#vacAnio'),
+    incPersona: qs('#incPersona'), incAnio: qs('#incAnio'),
   };
-
-  function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this, arguments), ms); }; }
-
-  async function fetchJSON(url, opts){
-    const r = await fetch(url, { credentials:'include', ...opts });
-    if (!r.ok) throw new Error('HTTP '+r.status);
-    return r.json();
-  }
-
-  function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }
-
-  function emit(name, detail){ document.dispatchEvent(new CustomEvent(name, { detail })); }
-
-  // ---------- UI builders ----------
-  function buildStationsUI(payload){
-    const wrapSingle = document.getElementById('stationsSingle');
-    const wrapMulti  = document.getElementById('stationsMulti');
-    const singleOaci = document.getElementById('singleOaci');
-    const list       = document.getElementById('oaciList');
-
-    if (!Array.isArray(payload.oaci) || payload.oaci.length === 0) {
-      wrapSingle.classList.remove('d-none');
-      if (singleOaci) singleOaci.textContent = '—';
-      return;
-    }
-
-    if (payload.oaci.length === 1) {
-      wrapSingle.classList.remove('d-none');
-      if (singleOaci) singleOaci.textContent = payload.oaci[0];
-      state.oaci = [payload.oaci[0]];
-      emit('oaci:changed', state.oaci.slice());
-      return;
-    }
-
-    // Multi
-    wrapMulti.classList.remove('d-none');
-    list.innerHTML = '';
-    payload.oaci.forEach(o=>{
-      const id = 'toggle-'+o;
-      list.insertAdjacentHTML('beforeend', `
-        <div class="form-check form-switch">
-          <input class="form-check-input oaci-child" type="checkbox" role="switch" id="${id}" value="${o}" checked>
-          <label class="form-check-label switch-label" for="${id}">${o}</label>
-        </div>
-      `);
-    });
-
-    // Parent checkbox plugin
-    const parent = $('#oaciAll');
-    parent.attr('data-children', '#oaciList .oaci-child');
-    const cb = parent.checkbox(function(values){
-      state.oaci = values.slice();
-      emit('oaci:changed', state.oaci.slice());
-      refreshActive();
-    });
-
-    // Children debounce
-    $('#oaciList .oaci-child').on('change', debounce(function(){
-      // recompute active OACI
-      const vals = Array.from(document.querySelectorAll('#oaciList .oaci-child:checked')).map(i=>i.value);
-      state.oaci = vals;
-      emit('oaci:changed', state.oaci.slice());
-      refreshActive();
-    }, 180));
-
-    // initial values
-    state.oaci = payload.oaci.slice();
-    emit('oaci:changed', state.oaci.slice());
-  }
-
-  function buildSelectors(payload){
-    // Personas
-    state.personas = Array.isArray(payload.personas) ? payload.personas : [];
-    const selPersona = document.getElementById('personaSelect');
-    const prev = selPersona.value;
-    selPersona.innerHTML = '<option value="">Seleccione…</option>';
-    state.personas.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = String(p.control);
-      opt.textContent = `${p.oaci} — ${p.control} · ${p.nombres}`;
-      selPersona.appendChild(opt);
-    });
-    if (prev) selPersona.value = prev;
-
-    // Years
-    state.years = Array.isArray(payload.years) ? payload.years : [];
-    const selYear = document.getElementById('anioSelect');
-    selYear.innerHTML = '';
-    state.years.forEach(y=>{
-      const opt = document.createElement('option');
-      opt.value = String(y); opt.textContent = String(y);
-      selYear.appendChild(opt);
-    });
-    if (!state.selectedYear && state.years.length) state.selectedYear = String(state.years[0]);
-    selYear.value = state.selectedYear;
-  }
-
-  // ---------- Render tables ----------
-
-  function renderPecosPersona(rows){
-    const tb = document.querySelector('#tblPecosPersona tbody');
-    if (!rows || !rows.length){
-      tb.innerHTML = '<tr><td colspan="15" class="text-secondary">Sin datos.</td></tr>';
-      return;
-    }
-    tb.innerHTML = rows.map(r=>{
-      const cels = [];
-      cels.push(`<td>${esc(r.year)}</td>`);
-      for (let i=1;i<=12;i++){ cels.push(`<td>${esc(r['dia'+i]||'')}</td>`); }
-      cels.push(`<td><button class="btn btn-sm btn-primary" data-edit="pecos" data-control="${esc(r.control)}" data-year="${esc(r.year)}">Editar</button></td>`);
-      cels.push(`<td><button class="btn btn-sm btn-outline-danger" data-del="pecos" data-control="${esc(r.control)}" data-year="${esc(r.year)}">Eliminar</button></td>`);
-      return `<tr>${cels.join('')}</tr>`;
-    }).join('');
-  }
-
-  function renderPecosYear(rows){
-    const tb = document.querySelector('#tblPecosYear tbody');
-    if (!rows || !rows.length){
-      tb.innerHTML = '<tr><td class="text-secondary">Sin datos.</td></tr>';
-      return;
-    }
-    tb.innerHTML = rows.map(r=>{
-      const cels = [];
-      cels.push(`<td>${esc(r.oaci||'')}</td>`);
-      cels.push(`<td>${esc(r.nombres||'')}<br><small class="text-secondary">#${esc(r.control||'')}</small></td>`);
-      for (let i=1;i<=12;i++){ cels.push(`<td>${esc(r['dia'+i]||'')}</td>`); }
-      cels.push(`<td><button class="btn btn-sm btn-primary" data-edit="pecos" data-control="${esc(r.control)}" data-year="${esc(state.selectedYear)}">Editar</button></td>`);
-      cels.push(`<td><button class="btn btn-sm btn-outline-danger" data-del="pecos" data-control="${esc(r.control)}" data-year="${esc(state.selectedYear)}">Eliminar</button></td>`);
-      return `<tr>${cels.join('')}</tr>`;
-    }).join('');
-  }
-
-  function renderTxtPersona(rows){
-    const tb = document.querySelector('#tblTxtPersona tbody');
-    if (!rows || !rows.length){
-      tb.innerHTML = '<tr><td colspan="10" class="text-secondary">Sin datos.</td></tr>';
-      return;
-    }
-    tb.innerHTML = rows.map(r=>{
-      const cels = [];
-      cels.push(`<td>${esc(r.year)}</td>`);
-      ['js','vs','dm','ds','muert','ono'].forEach(k=> cels.push(`<td>${esc(r[k]||'')}</td>`));
-      cels.push(`<td>${esc(r.fecha_nacimiento||'')}</td>`);
-      cels.push(`<td><button class="btn btn-sm btn-primary" data-edit="txt" data-control="${esc(r.control)}" data-year="${esc(r.year)}">Editar</button></td>`);
-      cels.push(`<td><button class="btn btn-sm btn-outline-danger" data-del="txt" data-control="${esc(r.control)}" data-year="${esc(r.year)}">Eliminar</button></td>`);
-      return `<tr>${cels.join('')}</tr>`;
-    }).join('');
-  }
-
-  function renderTxtYear(rows){
-    const tb = document.querySelector('#tblTxtYear tbody');
-    if (!rows || !rows.length){
-      tb.innerHTML = '<tr><td class="text-secondary">Sin datos.</td></tr>';
-      return;
-    }
-    tb.innerHTML = rows.map(r=>{
-      const cels = [];
-      cels.push(`<td>${esc(r.oaci||'')}</td>`);
-      cels.push(`<td>${esc(r.nombres||'')}<br><small class="text-secondary">#${esc(r.control||'')}</small></td>`);
-      ['js','vs','dm','ds','muert','ono'].forEach(k=> cels.push(`<td>${esc(r[k]||'')}</td>`));
-      cels.push(`<td>${esc(r.fecha_nacimiento||'')}</td>`);
-      cels.push(`<td><button class="btn btn-sm btn-primary" data-edit="txt" data-control="${esc(r.control)}" data-year="${esc(state.selectedYear)}">Editar</button></td>`);
-      cels.push(`<td><button class="btn btn-sm btn-outline-danger" data-del="txt" data-control="${esc(r.control)}" data-year="${esc(state.selectedYear)}">Eliminar</button></td>`);
-      return `<tr>${cels.join('')}</tr>`;
-    }).join('');
-  }
-
-  function renderVacPersona(rows){
-    const tb = document.querySelector('#tblVacPersona tbody');
-    if (!rows || !rows.length){
-      tb.innerHTML = '<tr><td colspan="9" class="text-secondary">Sin datos.</td></tr>';
-      return;
-    }
-    tb.innerHTML = rows.map(r=>{
-      const cels = [];
-      cels.push(`<td>${esc(r.year)}</td>`);
-      cels.push(`<td>${esc(r.dias_ant)}</td>`);
-      cels.push(`<td>${esc(r.pr)}</td>`);
-      cels.push(`<td>${esc(r.vac1_rest)}</td>`);
-      cels.push(`<td>${esc(r.vac2_rest)}</td>`);
-      cels.push(`<td>${esc(r.ant_usados)}</td>`);
-      cels.push(`<td>${esc(r.pr_usados)}</td>`);
-      cels.push(`<td><button class="btn btn-sm btn-primary" data-edit="vac" data-control="${esc(r.control)}" data-year="${esc(r.year)}">Editar</button></td>`);
-      cels.push(`<td><button class="btn btn-sm btn-outline-danger" data-del="vac" data-control="${esc(r.control)}" data-year="${esc(r.year)}">Eliminar</button></td>`);
-      return `<tr>${cels.join('')}</tr>`;
-    }).join('');
-  }
-  function renderVacYear(rows){
-    const tb = document.querySelector('#tblVacYear tbody');
-    if (!rows || !rows.length){
-      tb.innerHTML = '<tr><td class="text-secondary">Sin datos.</td></tr>';
-      return;
-    }
-    tb.innerHTML = rows.map(r=>{
-      const cels = [];
-      cels.push(`<td>${esc(r.oaci||'')}</td>`);
-      cels.push(`<td>${esc(r.nombres||'')}<br><small class="text-secondary">#${esc(r.control||'')}</small></td>`);
-      cels.push(`<td>${esc(r.dias_ant)}</td>`);
-      cels.push(`<td>${esc(r.pr)}</td>`);
-      cels.push(`<td>${esc(r.vac1_rest)}</td>`);
-      cels.push(`<td>${esc(r.vac2_rest)}</td>`);
-      cels.push(`<td>${esc(r.ant_usados)}</td>`);
-      cels.push(`<td>${esc(r.pr_usados)}</td>`);
-      cels.push(`<td><button class="btn btn-sm btn-primary" data-edit="vac" data-control="${esc(r.control)}" data-year="${esc(state.selectedYear)}">Editar</button></td>`);
-      cels.push(`<td><button class="btn btn-sm btn-outline-danger" data-del="vac" data-control="${esc(r.control)}" data-year="${esc(state.selectedYear)}">Eliminar</button></td>`);
-      return `<tr>${cels.join('')}</tr>`;
-    }).join('');
-  }
-
-  function renderIncPersona(rows){
-    const tb = document.querySelector('#tblIncPersona tbody');
-    if (!rows || !rows.length){
-      tb.innerHTML = '<tr><td colspan="9" class="text-secondary">Sin datos.</td></tr>';
-      return;
-    }
-    tb.innerHTML = rows.map(r=>{
-      const cels = [];
-      cels.push(`<td>${esc(r.year)}</td>`);
-      cels.push(`<td>${esc(r.folio||'')}</td>`);
-      cels.push(`<td>${esc(r.inicia||'')}</td>`);
-      cels.push(`<td>${esc(r.termina||'')}</td>`);
-      cels.push(`<td>${esc(r.dias||'')}</td>`);
-      cels.push(`<td>${esc(r.umf||'')}</td>`);
-      cels.push(`<td>${esc(r.diag||'')}</td>`);
-      cels.push(`<td><button class="btn btn-sm btn-primary" data-edit="inc" data-id="${esc(r.id)}">Editar</button></td>`);
-      cels.push(`<td><button class="btn btn-sm btn-outline-danger" data-del="inc" data-id="${esc(r.id)}">Eliminar</button></td>`);
-      return `<tr>${cels.join('')}</tr>`;
-    }).join('');
-  }
-  function renderIncYear(rows){
-    const tb = document.querySelector('#tblIncYear tbody');
-    if (!rows || !rows.length){
-      tb.innerHTML = '<tr><td class="text-secondary">Sin datos.</td></tr>';
-      return;
-    }
-    tb.innerHTML = rows.map(r=>{
-      const cels = [];
-      cels.push(`<td>${esc(r.oaci||'')}</td>`);
-      cels.push(`<td>${esc(r.nombres||'')}<br><small class="text-secondary">#${esc(r.control||'')}</small></td>`);
-      cels.push(`<td>${esc(r.folio||'')}</td>`);
-      cels.push(`<td>${esc(r.inicia||'')}</td>`);
-      cels.push(`<td>${esc(r.termina||'')}</td>`);
-      cels.push(`<td>${esc(r.dias||'')}</td>`);
-      cels.push(`<td>${esc(r.umf||'')}</td>`);
-      cels.push(`<td>${esc(r.diag||'')}</td>`);
-      cels.push(`<td><button class="btn btn-sm btn-primary" data-edit="inc" data-id="${esc(r.id)}">Editar</button></td>`);
-      cels.push(`<td><button class="btn btn-sm btn-outline-danger" data-del="inc" data-id="${esc(r.id)}">Eliminar</button></td>`);
-      return `<tr>${cels.join('')}</tr>`;
-    }).join('');
-  }
-
-  // ---------- Data fetchers ----------
-  async function refreshActive(){
-    const tab = state.activeTab;
-    if (state.mode === 'persona'){
-      const ctrl = document.getElementById('personaSelect').value.trim();
-      state.selectedPersona = ctrl;
-      if (!ctrl) return;
-      if (tab === 'pecos'){
-        const rows = await fetchJSON(API+'pecos_list.php?mode=persona&control='+encodeURIComponent(ctrl));
-        renderPecosPersona(rows.data || []);
-      } else if (tab === 'txt'){
-        const rows = await fetchJSON(API+'txt_list.php?mode=persona&control='+encodeURIComponent(ctrl));
-        renderTxtPersona(rows.data || []);
-      } else if (tab === 'vac'){
-        const rows = await fetchJSON(API+'vacaciones_list.php?mode=persona&control='+encodeURIComponent(ctrl));
-        renderVacPersona(rows.data || []);
-      } else if (tab === 'inc'){
-        const rows = await fetchJSON(API+'incapacidades_list.php?mode=persona&control='+encodeURIComponent(ctrl));
-        renderIncPersona(rows.data || []);
-      }
-    } else {
-      const year = document.getElementById('anioSelect').value.trim();
-      state.selectedYear = year;
-      const oaci = state.oaci.slice();
-      const qs = 'year='+encodeURIComponent(year)+'&oaci='+encodeURIComponent(oaci.join(','));
-      if (tab === 'pecos'){
-        const rows = await fetchJSON(API+'pecos_list.php?mode=anio&'+qs);
-        renderPecosYear(rows.data || []);
-      } else if (tab === 'txt'){
-        const rows = await fetchJSON(API+'txt_list.php?mode=anio&'+qs);
-        renderTxtYear(rows.data || []);
-      } else if (tab === 'vac'){
-        const rows = await fetchJSON(API+'vacaciones_list.php?mode=anio&'+qs);
-        renderVacYear(rows.data || []);
-      } else if (tab === 'inc'){
-        const rows = await fetchJSON(API+'incapacidades_list.php?mode=anio&'+qs);
-        renderIncYear(rows.data || []);
-      }
-    }
-  }
-
-  // ---------- Events & Init ----------
-  document.addEventListener('DOMContentLoaded', async function(){
-    try {
-      const init = await fetchJSON(API+'prestaciones_init.php');
-      buildStationsUI(init);
-      buildSelectors(init);
-      // default selections
-      if (init.personas && init.personas[0]) {
-        document.getElementById('personaSelect').value = String(init.personas[0].control);
-      }
-      if (init.years && init.years[0]) {
-        document.getElementById('anioSelect').value = String(init.years[0]);
-      }
-    } catch(e){
-      console.error('Init error', e);
-    }
-
-    // Mode switch
-    document.querySelectorAll('#modeSwitch [data-mode]').forEach(btn=>{
-      btn.addEventListener('click', (ev)=>{
-        ev.preventDefault();
-        const m = btn.getAttribute('data-mode');
-        if (state.mode === m) return;
-        state.mode = m;
-        document.querySelectorAll('#modeSwitch [data-mode]').forEach(b=>{
-          b.classList.toggle('btn-primary', b===btn);
-          b.classList.toggle('btn-outline-secondary', b!==btn);
-        });
-        document.getElementById('personaSelectWrap').classList.toggle('d-none', m!=='persona');
-        document.getElementById('anioSelectWrap').classList.toggle('d-none', m!=='anio');
-        // show/hide per-tab panes
-        document.getElementById('pecosPersona').classList.toggle('d-none', !(m==='persona'));
-        document.getElementById('pecosAnio').classList.toggle('d-none', !(m==='anio'));
-        document.getElementById('txtPersona').classList.toggle('d-none', !(m==='persona'));
-        document.getElementById('txtAnio').classList.toggle('d-none', !(m==='anio'));
-        document.getElementById('vacPersona').classList.toggle('d-none', !(m==='persona'));
-        document.getElementById('vacAnio').classList.toggle('d-none', !(m==='anio'));
-        document.getElementById('incPersona').classList.toggle('d-none', !(m==='persona'));
-        document.getElementById('incAnio').classList.toggle('d-none', !(m==='anio'));
-        emit('mode:changed', m);
-        refreshActive();
-      });
-    });
-
-    // Persona/year selectors
-    document.getElementById('personaSelect').addEventListener('change', ()=>{ refreshActive(); });
-    document.getElementById('anioSelect').addEventListener('change', ()=>{ refreshActive(); });
-
-    // Tabs
-    document.querySelectorAll('#prestTabs button[data-bs-toggle="tab"]').forEach(btn=>{
-      btn.addEventListener('shown.bs.tab', (e)=>{
-        const id = e.target.id;
-        state.activeTab = id.replace('tab-','');
-        refreshActive();
-      });
-    });
-
-    // First paint
-    refreshActive();
-  });
-
-  // Expose refresh for external triggers (keeps backward compat)
-  window.refreshPecosTxtViews = function(detail){
-    refreshActive();
-  };
-
+  function lpad(n,w){n=String(n);return n.length>=w?n:'0'.repeat(w-n.length)+n;}
+  function selectedStations(){const boxes=qsa('.oaci-switch'); if(!boxes.length || (el.oaciAll && el.oaciAll.checked)) return INIT.stations.slice(); const s=boxes.filter(b=>b.checked).map(b=>b.getAttribute('data-oaci')); return s.length?s:INIT.stations.slice();}
+  function activeTab(){const a=qs('#prestTabs .nav-link.active'); return a?a.id.replace('tab-',''):'pecos';}
+  function setMode(m){MODE=m; el.personaWrap.classList.toggle('d-none', m!=='persona'); el.anioWrap.classList.toggle('d-none', m!=='anio'); el.txtPersona.classList.toggle('d-none', m!=='persona'); el.txtAnio.classList.toggle('d-none', m!=='anio'); el.vacPersona.classList.toggle('d-none', m!=='persona'); el.vacAnio.classList.toggle('d-none', m!=='anio'); el.incPersona.classList.toggle('d-none', m!=='persona'); el.incAnio.classList.toggle('d-none', m!=='anio'); refreshActive();}
+  async function init(){const r=await fetch(API+'prestaciones_init.php'); const data=await r.json(); INIT=data; if(el.oaciList){ el.oaciList.innerHTML=(INIT.stations||[]).map(o=>{const id='oaci_'+o; return '<div class="form-check form-switch"><input class="form-check-input oaci-switch" type="checkbox" role="switch" id="'+id+'" data-oaci="'+o+'" checked><label class="form-check-label" for="'+id+'">'+o+'</label></div>';}).join(''); qsa('.oaci-switch').forEach(i=>i.addEventListener('change',()=>{ if(!i.checked&&el.oaciAll) el.oaciAll.checked=false; refreshActive(); })); } if(el.oaciAll){ el.oaciAll.checked=true; el.oaciAll.addEventListener('change',()=>{const on=el.oaciAll.checked; qsa('.oaci-switch').forEach(i=>i.checked=on); refreshActive();}); } if(el.personaSel){ el.personaSel.innerHTML='<option value=\"\">Seleccione…</option>'+(INIT.personas||[]).map(r=>'<option value=\"'+r.control+'\">'+(r.oaci?(r.oaci+' · '):'')+lpad(r.control,4)+' · '+(r.nombres||'')+'</option>').join(''); } if(el.anioSel){ el.anioSel.innerHTML=(INIT.years||[]).map(y=>'<option value=\"'+y+'\">'+y+'</option>').join(''); } el.modeBtns.forEach(b=> b.addEventListener('click', ()=> setMode(b.getAttribute('data-mode')))); el.personaSel && el.personaSel.addEventListener('change', refreshActive); el.anioSel && el.anioSel.addEventListener('change', refreshActive); document.addEventListener('shown.bs.tab', (ev)=>{ if(ev.target && ev.target.id && ev.target.id.startsWith('tab-')) refreshActive();}); refreshActive();}
+  function clearTable(t,msg){const tb=t&&t.tBodies&&t.tBodies[0]; if(tb) tb.innerHTML='<tr><td class="text-secondary">'+msg+'</td></tr>';}
+  async function refreshActive(){const tab=activeTab(); const sts=selectedStations().join(','); if(MODE==='persona'){const c=parseInt(el.personaSel&&el.personaSel.value?el.personaSel.value:'0',10); if(!c){ if(tab==='pecos') clearTable(el.pecosPersonaTbl,'Seleccione un trabajador…'); if(tab==='txt') clearTable(el.txtPersonaTbl,'Seleccione un trabajador…'); if(tab==='vac') clearTable(el.vacPersonaTbl,'Seleccione un trabajador…'); if(tab==='inc') clearTable(el.incPersonaTbl,'Seleccione un trabajador…'); return;} await route(tab,{mode:'persona',control:c,stations:sts}); } else { const y=parseInt(el.anioSel&&el.anioSel.value?el.anioSel.value:String(new Date().getFullYear()),10); await route(tab,{mode:'anio',year:y,stations:sts}); } }
+  async function route(tab, params){ if(tab==='pecos') await load('../api/pecos_list.php',params, rows=> params.mode==='persona'? renderPecosPersona(rows):renderPecosYear(rows)); if(tab==='txt') await load('../api/txt_list.php',params, rows=> params.mode==='persona'? renderTxtPersona(rows):renderTxtYear(rows)); if(tab==='vac') await load('../api/vacaciones_list.php',params, rows=> params.mode==='persona'? renderVacPersona(rows):renderVacYear(rows, params.year)); if(tab==='inc') await load('../api/incapacidades_list.php',params, rows=> params.mode==='persona'? renderIncPersona(rows):renderIncYear(rows));}
+  async function load(url, params, cb){const u=new URL(url, window.location.href); Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,String(v))); const r=await fetch(u.toString()); if(!r.ok) return; const d=await r.json(); if(!d.ok) return; cb(d.rows||[]);}
+  function renderPecosPersona(rows){const tb=el.pecosPersonaTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td>'+r.year+'</td>'+Array.from({length:12},(_,i)=>'<td class="text-center">'+(r['dia'+(i+1)]||'0')+'</td>').join('')+'<td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
+  function renderPecosYear(rows){const tb=el.pecosYearTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td class="nowrap">'+(r.oaci||'')+'</td><td class="nowrap">'+lpad(r.control,4)+'</td><td>'+(r.nombres||'')+'</td>'+Array.from({length:12},(_,i)=>'<td class="text-center">'+(r['dia'+(i+1)]||'0')+'</td>').join('')+'<td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
+  function renderTxtPersona(rows){const tb=el.txtPersonaTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td>'+r.year+'</td>'+['js','vs','dm','ds','muert','ono'].map(k=>'<td class="text-center">'+(r[k]||'0')+'</td>').join('')+'<td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
+  function renderTxtYear(rows){const tb=el.txtYearTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td class="nowrap">'+(r.oaci||'')+'</td><td class="nowrap">'+lpad(r.control,4)+'</td><td>'+(r.nombres||'')+'</td>'+['js','vs','dm','ds','muert','ono'].map(k=>'<td class="text-center">'+(r[k]||'0')+'</td>').join('')+'<td>'+(r.fnac||'')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
+  function renderVacPersona(rows){const tb=el.vacPersonaTbl.tBodies[0]; tb.innerHTML=''; const now=new Date(); rows.forEach(r=>{const tr=document.createElement('tr'); const cls=vacRowClass(r,now); if(cls) tr.classList.add(cls); tr.innerHTML='<td>'+(r.year||'')+'</td><td>'+(r.tipo||'')+'</td><td>'+(r.periodo||'')+'</td><td>'+(r.inicia||'')+'</td><td>'+(r.reanuda||'')+'</td><td class="text-center">'+(r.dias||'0')+'</td><td class="text-center">'+(r.resta||'0')+'</td><td>'+(r.obs||'')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
+  function renderVacYear(rows, year){const tb=el.vacYearTbl.tBodies[0]; tb.innerHTML=''; const now=new Date(); rows.forEach(r=>{const tr=document.createElement('tr'); const cls=vacRowClass(r,now,year); if(cls) tr.classList.add(cls); tr.innerHTML='<td class="nowrap">'+(r.oaci||'')+'</td><td class="nowrap">'+lpad(r.control,4)+' · '+(r.nombres||'')+'</td><td class="text-center">'+(r.ant||'')+'</td><td class="text-center">'+(r.dias_asig||'')+'</td><td class="text-center">'+(r.pr_asig||'')+'</td><td class="text-center">'+(r.ant_asig||'')+'</td><td class="text-center">'+(r.dias_usados||'0')+'</td><td class="text-center">'+(r.pr_usados||'0')+'</td><td class="text-center">'+(r.ant_usados||'0')+'</td><td class="text-center">'+(r.dias_left||'0')+'</td><td class="text-center">'+(r.pr_left||'0')+'</td><td class="text-center">'+(r.ant_left||'0')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
+  function vacRowClass(r, now, selectedYear){const y=selectedYear|| (r.year?parseInt(r.year,10):null); if(!y) return ''; const left=parseInt(r.dias_left||r.resta||'0',10); if(isNaN(left)||left<=0) return ''; const end=new Date(y,5,30,23,59,59); const warnStart=new Date(y,0,1); if(now>=warnStart && now<=end){const diff=(end-now)/(1000*60*60*24); return diff<=90?'table-danger':'table-warning'; } return '';}
+  function renderIncPersona(rows){const tb=el.incPersonaTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td>'+(r.INICIA||'')+'</td><td>'+(r.TERMINA||'')+'</td><td class="text-center">'+(r.DIAS||'0')+'</td><td>'+(r.UMF||'')+'</td><td>'+(r.DIAGNOSTICO||'')+'</td><td>'+(r.FOLIO||'')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
+  function renderIncYear(rows){const tb=el.incYearTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td class="nowrap">'+(r.oaci||'')+'</td><td class="nowrap">'+lpad(r.control,4)+' · '+(r.nombres||'')+'</td><td>'+(r.INICIA||'')+'</td><td>'+(r.TERMINA||'')+'</td><td class="text-center">'+(r.DIAS||'0')+'</td><td>'+(r.UMF||'')+'</td><td>'+(r.DIAGNOSTICO||'')+'</td><td>'+(r.FOLIO||'')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
+  document.addEventListener('DOMContentLoaded', init);
 })();

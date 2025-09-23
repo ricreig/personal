@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 require_once __DIR__ . '/assets.php';
 require_once dirname(__DIR__,2) . '/lib/paths.php';
 cr_print_js_globals(); // expone window.BASE_URL y window.API_BASE

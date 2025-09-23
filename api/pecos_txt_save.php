@@ -1,58 +1,80 @@
 <?php
 declare(strict_types=1);
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+require_once __DIR__ . '/bootstrap.php';
+require_auth_api();header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+
 $ROOT = dirname(__DIR__);
-require_once $ROOT . '/lib/session.php'; session_boot();
+require_once $ROOT . '/lib/session.php';
 require_once $ROOT . '/lib/db.php';
 require_once $ROOT . '/lib/auth.php';
 
-$pdo=db(); $u=auth_user(); if(!$u){ http_response_code(401); echo json_encode(['error'=>'auth']); exit; }
+session_boot();
+$pdo = db();
+$u = auth_user();
+if (!$u) { http_response_code(401); echo json_encode(['error'=>'no-auth']); exit; }
 
-// body JSON: {control:int, year:int, pecos:{dia1..dia12}, txt:{js,vs,dm,ds,muert,ono} }
-$body = json_decode(file_get_contents('php://input'), true);
-$control = (int)($body['control'] ?? 0);
-$year    = (int)($body['year'] ?? 0);
-if ($control<=0 || $year<=0) { http_response_code(400); echo json_encode(['error'=>'bad_request']); exit; }
+$control = (int)($_POST['control'] ?? 0);
+$year    = (int)($_POST['year'] ?? 0);
+$pecos   = $_POST['pecos'] ?? [];
+$txt     = $_POST['txt'] ?? [];
+if ($control<=0 || $year<=0) { http_response_code(400); echo json_encode(['error'=>'bad-req']); exit; }
 
-// validar acceso por estación
+// permiso de edición por estación
 $st = $pdo->prepare("SELECT es.oaci FROM empleados e LEFT JOIN estaciones es ON es.id_estacion=e.estacion WHERE e.control=? LIMIT 1");
-$st->execute([$control]); $row=$st->fetch();
-if (!$row) { http_response_code(404); echo json_encode(['error'=>'not_found']); exit; }
-$oaci = strtoupper((string)$row['oaci']);
-$allow = [];
-if (is_admin()) {
-  $allow = [$oaci];
-} else if (function_exists('user_station_matrix')) {
-  $m = user_station_matrix($pdo, (int)($u['id'] ?? 0));
-  foreach($m as $k=>$v){ if ($v) $allow[] = strtoupper($k); }
+$st->execute([$control]); $oaci = $st->fetchColumn();
+$canEdit = false;
+if (($u['role'] ?? '') === 'admin') { $canEdit = true; }
+else {
+  // user_station_perms.can_edit
+  $ps = $pdo->prepare("SELECT can_edit FROM user_station_perms WHERE user_id=? AND oaci=? LIMIT 1");
+  $ps->execute([(int)($u['id'] ?? $u['uid'] ?? 0), $oaci]);
+  $canEdit = ((int)$ps->fetchColumn() === 1);
 }
-if (!in_array($oaci, $allow, true)) { http_response_code(403); echo json_encode(['error'=>'forbidden']); exit; }
+if (!$canEdit) { http_response_code(403); echo json_encode(['error'=>'no-edit']); exit; }
+
+// Normalizar arrays
+$P = [];
+for ($i=1;$i<=12;$i++){ $k='dia'.$i; $P[$k] = isset($pecos[$k]) ? (string)$pecos[$k] : ''; }
+$T = [
+  'js'    => (string)($txt['js']    ?? ''),
+  'vs'    => (string)($txt['vs']    ?? ''),
+  'dm'    => (string)($txt['dm']    ?? ''),
+  'ds'    => (string)($txt['ds']    ?? ''),
+  'muert' => (string)($txt['muert'] ?? ''),
+  'ono'   => (string)($txt['ono']   ?? ''),
+];
 
 $pdo->beginTransaction();
 try {
-  if (isset($body['pecos']) && is_array($body['pecos'])) {
-    $ps = $pdo->prepare("INSERT INTO pecos (control,year,dia1,dia2,dia3,dia4,dia5,dia6,dia7,dia8,dia9,dia10,dia11,dia12)
-                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                         ON DUPLICATE KEY UPDATE dia1=VALUES(dia1),dia2=VALUES(dia2),dia3=VALUES(dia3),dia4=VALUES(dia4),dia5=VALUES(dia5),dia6=VALUES(dia6),
-                                                 dia7=VALUES(dia7),dia8=VALUES(dia8),dia9=VALUES(dia9),dia10=VALUES(dia10),dia11=VALUES(dia11),dia12=VALUES(dia12)");
-    $P = $body['pecos'];
-    $vals = [ $control,$year ];
-    for($i=1;$i<=12;$i++){ $vals[] = (string)($P['dia'.$i] ?? '0'); }
-    $ps->execute($vals);
+  // PECOs upsert
+  $st = $pdo->prepare("SELECT COUNT(*) FROM pecos WHERE control=? AND year=?");
+  $st->execute([$control,$year]);
+  if ((int)$st->fetchColumn() > 0) {
+    $sql = "UPDATE pecos SET dia1=?,dia2=?,dia3=?,dia4=?,dia5=?,dia6=?,dia7=?,dia8=?,dia9=?,dia10=?,dia11=?,dia12=? WHERE control=? AND year=?";
+    $vals = [$P['dia1'],$P['dia2'],$P['dia3'],$P['dia4'],$P['dia5'],$P['dia6'],$P['dia7'],$P['dia8'],$P['dia9'],$P['dia10'],$P['dia11'],$P['dia12'],$control,$year];
+  } else {
+    $sql = "INSERT INTO pecos (dia1,dia2,dia3,dia4,dia5,dia6,dia7,dia8,dia9,dia10,dia11,dia12,control,year) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    $vals = [$P['dia1'],$P['dia2'],$P['dia3'],$P['dia4'],$P['dia5'],$P['dia6'],$P['dia7'],$P['dia8'],$P['dia9'],$P['dia10'],$P['dia11'],$P['dia12'],$control,$year];
   }
-  if (isset($body['txt']) && is_array($body['txt'])) {
-    $ts = $pdo->prepare("INSERT INTO txt (control,year,js,vs,dm,ds,muert,ono)
-                         VALUES (?,?,?,?,?,?,?,?)
-                         ON DUPLICATE KEY UPDATE js=VALUES(js),vs=VALUES(vs),dm=VALUES(dm),ds=VALUES(ds),muert=VALUES(muert),ono=VALUES(ono)");
-    $T = $body['txt'];
-    $ts->execute([ $control,$year,(string)($T['js']??'0'),(string)($T['vs']??'0'),(string)($T['dm']??'0'),
-                   (string)($T['ds']??'0'),(string)($T['muert']??'0'),(string)($T['ono']??'0') ]);
+  $pdo->prepare($sql)->execute($vals);
+
+  // TXT upsert
+  $st = $pdo->prepare("SELECT COUNT(*) FROM txt WHERE control=? AND year=?");
+  $st->execute([$control,$year]);
+  if ((int)$st->fetchColumn() > 0) {
+    $sql = "UPDATE txt SET js=?,vs=?,dm=?,ds=?,muert=?,ono=? WHERE control=? AND year=?";
+    $vals = [$T['js'],$T['vs'],$T['dm'],$T['ds'],$T['muert'],$T['ono'],$control,$year];
+  } else {
+    $sql = "INSERT INTO txt (js,vs,dm,ds,muert,ono,control,year) VALUES (?,?,?,?,?,?,?,?)";
+    $vals = [$T['js'],$T['vs'],$T['dm'],$T['ds'],$T['muert'],$T['ono'],$control,$year];
   }
+  $pdo->prepare($sql)->execute($vals);
+
   $pdo->commit();
   echo json_encode(['ok'=>true]);
-} catch(Throwable $e){
+} catch (Throwable $e) {
   $pdo->rollBack();
   http_response_code(500);
-  echo json_encode(['error'=>'db','detail'=>$e->getMessage()]);
+  echo json_encode(['error'=>'server','msg'=>$e->getMessage()]);
 }

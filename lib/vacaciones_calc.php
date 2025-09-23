@@ -1,6 +1,5 @@
 <?php
 declare(strict_types=1);
-
 /** Helpers para cálculo de vacaciones/ANT/PR */
 function vc_normalize_date(?string $d): ?string {
   $d = trim((string)$d);

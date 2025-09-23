@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
-header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/bootstrap.php';
+require_auth_api();header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
 $ROOT = dirname(__DIR__);

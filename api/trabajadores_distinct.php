@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
-
-@ini_set('display_errors','0');
+require_once __DIR__ . '/bootstrap.php';
+require_auth_api();@ini_set('display_errors','0');
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
