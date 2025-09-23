@@ -1,6 +1,9 @@
 #!/usr/bin/env php
 <?php
+<<<<<<< HEAD
 declare(strict_types=1);
+=======
+>>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
 $root = dirname(__DIR__);
 $rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
 $hits = [];
