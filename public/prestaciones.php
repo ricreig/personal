@@ -73,15 +73,17 @@ if (!$u) {
   text-align: center;
   margin-left: 2px;
 }
-
+.form-select {
+    font-size: 0.7rem;
+}
 /* Distribución en varias columnas para no cascada */
     #oaciList {
       display: flex;
       flex-wrap: wrap;
-      gap: .4rem .8rem;
+      gap: .2rem .4rem;
     }
     #oaciList .form-check {
-      flex: 1 1 calc(50% - .8rem);
+      flex: 1 1 calc(50% - .4rem);
     }
     #oaciList .form-check-label {
       font-size: .85rem;
@@ -150,9 +152,9 @@ if (!$u) {
     <div class="nav-right d-flex align-items-center justify-content-end gap-2">
       <?php if (function_exists('is_admin') && is_admin()): ?>
         <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
-        <a class="btn btn-outline-primary btn-sm" href="/public/index.php">Inicio</a>
+        <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Test Panel</a>
       <?php endif; ?>
-      <a class="btn btn-outline-primary btn-sm" href="/public/prestaciones.php">Prestaciones</a>
+      <a class="btn btn-outline-primary btn-sm" href="/public/index.php">Inicio</a>
       <div class="dropdown">
         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           <?= htmlspecialchars($u['nombre'] ?? $u['email'] ?? 'Usuario') ?>
@@ -177,7 +179,7 @@ if (!$u) {
           <div class="text-secondary small">Sistema para Gestión de Capital Humano</div>
         </div>
       </div>
-      <div class="d-flex align-items-center gap-2 flex-wrap toolbar-gap">
+    <div class="d-flex align-items-center gap-2 flex-wrap toolbar-gap">
         <div class="btn-group me-2" role="group" aria-label="Vista" id="modeSwitch">
           <button type="button" class="btn btn-sm btn-primary" data-mode="persona">Persona</button>
           <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="anio">Año</button>
@@ -197,19 +199,18 @@ if (!$u) {
         </div>
         <div class="dropdown me-2">
           <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="oaciDropdown" data-bs-toggle="dropdown" aria-expanded="false">Filtrar Estaciones</button>
-          <div class="dropdown-menu p-3 dropdown-menu-end" aria-labelledby="oaciDropdown" style="min-width:280px;max-height:260px;overflow:auto">
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" role="switch" id="oaciAll">
-              <label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
-            <div id="oaciList"></div>
+             <div class="dropdown-menu p-3 dropdown-menu-end" aria-labelledby="oaciDropdown" style="min-width:280px;max-height:260px;overflow:auto">
+                        <div class="form-check form-switch mb-2">
+                          <input class="form-check-input" type="checkbox" role="switch" id="oaciAll">
+                          <label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
+                          <div class="mt-2" id="oaciList"></div>
+                        </div>
+             </div>
         </div>
-      </div>
-
-						  </div>
-                  <div id="oaciList"></div>
-                </div>
-              </div>
-            </div>
+              <div id="oaciList"></div>
+    </div>
+   </div>
+  </div>
 
 
 
@@ -246,7 +247,7 @@ if (!$u) {
             <div class="card card-table">
               <div class="card-header fw-semibold">Días Economicos (PECO) — Vista por Año</div>
               <div class="card-body sticky-wrap">
-                <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblPecosYear">
+                <table class="table table-sm table-striped table-hover align-middle" id="tblPecosYear">
                   <thead><tr><th>Estación</th><th>Trabajador</th><th>D-01</th><th>D-02</th><th>D-03</th><th>D-04</th><th>D-05</th><th>D-06</th><th>D-07</th><th>D-08</th><th>D-09</th><th>D-10</th><th>D-11</th><th>D-12</th><th>Editar</th><th>Eliminar</th></tr></thead>
                   <tbody><tr><td class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>
@@ -272,7 +273,7 @@ if (!$u) {
             <div class="card card-table">
               <div class="card-header fw-semibold">Días Acumulables — Vista por Año</div>
               <div class="card-body sticky-wrap">
-                <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblTxtYear">
+                <table class="table table-sm table-striped table-hover align-middle" id="tblTxtYear">
                   <thead><tr><th>Estación</th><th>Trabajador</th><th>Jue. Santo</th><th>Vie. Santo</th><th>D. Madres</th><th>SENEAM/ATC</th><th>D. Muertos</th><th>Onomástico</th><th>Fecha Nac.</th><th>Editar</th><th>Eliminar</th></tr></thead>
                   <tbody><tr><td class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>
@@ -298,7 +299,7 @@ if (!$u) {
             <div class="card card-table">
               <div class="card-header fw-semibold">Vacaciones — Vista por Año</div>
               <div class="card-body sticky-wrap">
-                <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblVacYear">
+                <table class="table table-sm table-striped table-hover align-middle" id="tblVacYear">
                   <thead><tr><th>Estación</th><th>No. Control</th><th>Nombre</th><th>Antigüedad (derecho)</th><th>PR (derecho)</th><th>VAC 1 (restantes)</th><th>VAC 2 (restantes)</th><th>ANT usados</th><th>PR usados</th><th>Acciones</th></tr></thead>
                   <tbody><tr><td colspan="10" class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>
@@ -324,7 +325,7 @@ if (!$u) {
             <div class="card card-table">
               <div class="card-header fw-semibold">Incapacidades — Vista por Año</div>
               <div class="card-body sticky-wrap">
-                <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblIncYear">
+                <table class="table table-sm table-striped table-hover align-middle" id="tblIncYear">
                   <thead><tr><th>Estación</th><th>Trabajador</th><th>Folio</th><th>Inicia</th><th>Termina</th><th>Días</th><th>UMF</th><th>Diag.</th><th>Editar</th><th>Eliminar</th></tr></thead>
                   <tbody><tr><td class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>

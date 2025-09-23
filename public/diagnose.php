@@ -365,7 +365,7 @@ html,body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-syst
 .btn{
   display:inline-block; text-decoration:none; cursor:pointer; user-select:none;
   background:#2b7f86; color:#fff; border:1px solid #256e74;
-  padding:.5rem .75rem; border-radius:.55rem; font-weight:600; font-size:.92rem;
+  padding:.5rem .75rem; border-radius:.55rem; font-weight:600; font-size:.8rem;
 }
 .btn.alt{ background:transparent; color:#cfe0ff; border-color:#2a3346 }
 .btn:hover{ filter:brightness(1.05) }
@@ -521,7 +521,8 @@ pre{white-space:pre-wrap; background:#0b0e14; border:1px solid #22293a; padding:
       </div>
     </div>
 
-  <div class="col-6" style="display:flex; flex-direction:column; gap:12px;">
+
+  <div class="col-6" style="display:flex; flex-direction:column; gap:12px;">
         <!-- API -->
     <div class="card" style="flex:1;">
       <h3>API</h3>
