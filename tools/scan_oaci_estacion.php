@@ -1,7 +1,10 @@
 #!/usr/bin/env php
 <?php
 <<<<<<< HEAD
+<<<<<<< HEAD
 declare(strict_types=1);
+=======
+>>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
 =======
 >>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
 $root = dirname(__DIR__);

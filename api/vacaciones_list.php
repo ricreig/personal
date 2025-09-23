@@ -31,7 +31,11 @@ if ($mode === 'persona') {
         exit;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     $st = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, e.fingreso, es.oaci
+=======
+    $st = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, es.oaci
+>>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
 =======
     $st = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, es.oaci
 >>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
@@ -110,7 +114,11 @@ if (!$stations) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 $empStmt = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, e.fingreso, es.oaci
+=======
+$empStmt = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, es.oaci
+>>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
 =======
 $empStmt = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, es.oaci
 >>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
