@@ -1,42 +1,553 @@
-const API_BASE = '/api/';
+const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
 
-(function(){
-  const API = '../api/';
-  const qs = (s,ctx=document)=>ctx.querySelector(s);
-  const qsa = (s,ctx=document)=>Array.prototype.slice.call(ctx.querySelectorAll(s));
-  let INIT = {stations:[], personas:[], years:[]};
-  let MODE = 'persona';
-  const el = {
-    modeBtns: qsa('#modeSwitch [data-mode]'),
-    personaWrap: qs('#personaSelectWrap'), anioWrap: qs('#anioSelectWrap'),
-    personaSel: qs('#personaSelect'), anioSel: qs('#anioSelect'),
-    oaciAll: qs('#oaciAll'), oaciList: qs('#oaciList'),
-    tabs: qs('#prestTabs'),
-    pecosPersonaTbl: qs('#tblPecosPersona'), pecosYearTbl: qs('#tblPecosYear'),
-    txtPersonaTbl: qs('#tblTxtPersona'), txtYearTbl: qs('#tblTxtYear'),
-    vacPersonaTbl: qs('#tblVacPersona'), vacYearTbl: qs('#tblVacYear'),
-    incPersonaTbl: qs('#tblIncPersona'), incYearTbl: qs('#tblIncYear'),
-    txtPersona: qs('#txtPersona'), txtAnio: qs('#txtAnio'),
-    vacPersona: qs('#vacPersona'), vacAnio: qs('#vacAnio'),
-    incPersona: qs('#incPersona'), incAnio: qs('#incAnio'),
+(function () {
+  const storageKey = 'prestacionesMode';
+  const state = {
+    init: null,
+    mode: localStorage.getItem(storageKey) || 'persona',
+    personaControl: '',
+    personaYear: new Date().getFullYear(),
+    year: new Date().getFullYear(),
   };
-  function lpad(n,w){n=String(n);return n.length>=w?n:'0'.repeat(w-n.length)+n;}
-  function selectedStations(){const boxes=qsa('.oaci-switch'); if(!boxes.length || (el.oaciAll && el.oaciAll.checked)) return INIT.stations.slice(); const s=boxes.filter(b=>b.checked).map(b=>b.getAttribute('data-oaci')); return s.length?s:INIT.stations.slice();}
-  function activeTab(){const a=qs('#prestTabs .nav-link.active'); return a?a.id.replace('tab-',''):'pecos';}
-  function setMode(m){MODE=m; el.personaWrap.classList.toggle('d-none', m!=='persona'); el.anioWrap.classList.toggle('d-none', m!=='anio'); el.txtPersona.classList.toggle('d-none', m!=='persona'); el.txtAnio.classList.toggle('d-none', m!=='anio'); el.vacPersona.classList.toggle('d-none', m!=='persona'); el.vacAnio.classList.toggle('d-none', m!=='anio'); el.incPersona.classList.toggle('d-none', m!=='persona'); el.incAnio.classList.toggle('d-none', m!=='anio'); refreshActive();}
-  async function init(){const r=await fetch(API+'prestaciones_init.php'); const data=await r.json(); INIT=data; if(el.oaciList){ el.oaciList.innerHTML=(INIT.stations||[]).map(o=>{const id='oaci_'+o; return '<div class="form-check form-switch"><input class="form-check-input oaci-switch" type="checkbox" role="switch" id="'+id+'" data-oaci="'+o+'" checked><label class="form-check-label" for="'+id+'">'+o+'</label></div>';}).join(''); qsa('.oaci-switch').forEach(i=>i.addEventListener('change',()=>{ if(!i.checked&&el.oaciAll) el.oaciAll.checked=false; refreshActive(); })); } if(el.oaciAll){ el.oaciAll.checked=true; el.oaciAll.addEventListener('change',()=>{const on=el.oaciAll.checked; qsa('.oaci-switch').forEach(i=>i.checked=on); refreshActive();}); } if(el.personaSel){ el.personaSel.innerHTML='<option value=\"\">Seleccione…</option>'+(INIT.personas||[]).map(r=>'<option value=\"'+r.control+'\">'+(r.oaci?(r.oaci+' · '):'')+lpad(r.control,4)+' · '+(r.nombres||'')+'</option>').join(''); } if(el.anioSel){ el.anioSel.innerHTML=(INIT.years||[]).map(y=>'<option value=\"'+y+'\">'+y+'</option>').join(''); } el.modeBtns.forEach(b=> b.addEventListener('click', ()=> setMode(b.getAttribute('data-mode')))); el.personaSel && el.personaSel.addEventListener('change', refreshActive); el.anioSel && el.anioSel.addEventListener('change', refreshActive); document.addEventListener('shown.bs.tab', (ev)=>{ if(ev.target && ev.target.id && ev.target.id.startsWith('tab-')) refreshActive();}); refreshActive();}
-  function clearTable(t,msg){const tb=t&&t.tBodies&&t.tBodies[0]; if(tb) tb.innerHTML='<tr><td class="text-secondary">'+msg+'</td></tr>';}
-  async function refreshActive(){const tab=activeTab(); const sts=selectedStations().join(','); if(MODE==='persona'){const c=parseInt(el.personaSel&&el.personaSel.value?el.personaSel.value:'0',10); if(!c){ if(tab==='pecos') clearTable(el.pecosPersonaTbl,'Seleccione un trabajador…'); if(tab==='txt') clearTable(el.txtPersonaTbl,'Seleccione un trabajador…'); if(tab==='vac') clearTable(el.vacPersonaTbl,'Seleccione un trabajador…'); if(tab==='inc') clearTable(el.incPersonaTbl,'Seleccione un trabajador…'); return;} await route(tab,{mode:'persona',control:c,stations:sts}); } else { const y=parseInt(el.anioSel&&el.anioSel.value?el.anioSel.value:String(new Date().getFullYear()),10); await route(tab,{mode:'anio',year:y,stations:sts}); } }
-  async function route(tab, params){ if(tab==='pecos') await load('../api/pecos_list.php',params, rows=> params.mode==='persona'? renderPecosPersona(rows):renderPecosYear(rows)); if(tab==='txt') await load('../api/txt_list.php',params, rows=> params.mode==='persona'? renderTxtPersona(rows):renderTxtYear(rows)); if(tab==='vac') await load('../api/vacaciones_list.php',params, rows=> params.mode==='persona'? renderVacPersona(rows):renderVacYear(rows, params.year)); if(tab==='inc') await load('../api/incapacidades_list.php',params, rows=> params.mode==='persona'? renderIncPersona(rows):renderIncYear(rows));}
-  async function load(url, params, cb){const u=new URL(url, window.location.href); Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,String(v))); const r=await fetch(u.toString()); if(!r.ok) return; const d=await r.json(); if(!d.ok) return; cb(d.rows||[]);}
-  function renderPecosPersona(rows){const tb=el.pecosPersonaTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td>'+r.year+'</td>'+Array.from({length:12},(_,i)=>'<td class="text-center">'+(r['dia'+(i+1)]||'0')+'</td>').join('')+'<td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
-  function renderPecosYear(rows){const tb=el.pecosYearTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td class="nowrap">'+(r.oaci||'')+'</td><td class="nowrap">'+lpad(r.control,4)+'</td><td>'+(r.nombres||'')+'</td>'+Array.from({length:12},(_,i)=>'<td class="text-center">'+(r['dia'+(i+1)]||'0')+'</td>').join('')+'<td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
-  function renderTxtPersona(rows){const tb=el.txtPersonaTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td>'+r.year+'</td>'+['js','vs','dm','ds','muert','ono'].map(k=>'<td class="text-center">'+(r[k]||'0')+'</td>').join('')+'<td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
-  function renderTxtYear(rows){const tb=el.txtYearTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td class="nowrap">'+(r.oaci||'')+'</td><td class="nowrap">'+lpad(r.control,4)+'</td><td>'+(r.nombres||'')+'</td>'+['js','vs','dm','ds','muert','ono'].map(k=>'<td class="text-center">'+(r[k]||'0')+'</td>').join('')+'<td>'+(r.fnac||'')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
-  function renderVacPersona(rows){const tb=el.vacPersonaTbl.tBodies[0]; tb.innerHTML=''; const now=new Date(); rows.forEach(r=>{const tr=document.createElement('tr'); const cls=vacRowClass(r,now); if(cls) tr.classList.add(cls); tr.innerHTML='<td>'+(r.year||'')+'</td><td>'+(r.tipo||'')+'</td><td>'+(r.periodo||'')+'</td><td>'+(r.inicia||'')+'</td><td>'+(r.reanuda||'')+'</td><td class="text-center">'+(r.dias||'0')+'</td><td class="text-center">'+(r.resta||'0')+'</td><td>'+(r.obs||'')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
-  function renderVacYear(rows, year){const tb=el.vacYearTbl.tBodies[0]; tb.innerHTML=''; const now=new Date(); rows.forEach(r=>{const tr=document.createElement('tr'); const cls=vacRowClass(r,now,year); if(cls) tr.classList.add(cls); tr.innerHTML='<td class="nowrap">'+(r.oaci||'')+'</td><td class="nowrap">'+lpad(r.control,4)+' · '+(r.nombres||'')+'</td><td class="text-center">'+(r.ant||'')+'</td><td class="text-center">'+(r.dias_asig||'')+'</td><td class="text-center">'+(r.pr_asig||'')+'</td><td class="text-center">'+(r.ant_asig||'')+'</td><td class="text-center">'+(r.dias_usados||'0')+'</td><td class="text-center">'+(r.pr_usados||'0')+'</td><td class="text-center">'+(r.ant_usados||'0')+'</td><td class="text-center">'+(r.dias_left||'0')+'</td><td class="text-center">'+(r.pr_left||'0')+'</td><td class="text-center">'+(r.ant_left||'0')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
-  function vacRowClass(r, now, selectedYear){const y=selectedYear|| (r.year?parseInt(r.year,10):null); if(!y) return ''; const left=parseInt(r.dias_left||r.resta||'0',10); if(isNaN(left)||left<=0) return ''; const end=new Date(y,5,30,23,59,59); const warnStart=new Date(y,0,1); if(now>=warnStart && now<=end){const diff=(end-now)/(1000*60*60*24); return diff<=90?'table-danger':'table-warning'; } return '';}
-  function renderIncPersona(rows){const tb=el.incPersonaTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td>'+(r.INICIA||'')+'</td><td>'+(r.TERMINA||'')+'</td><td class="text-center">'+(r.DIAS||'0')+'</td><td>'+(r.UMF||'')+'</td><td>'+(r.DIAGNOSTICO||'')+'</td><td>'+(r.FOLIO||'')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
-  function renderIncYear(rows){const tb=el.incYearTbl.tBodies[0]; tb.innerHTML=''; rows.forEach(r=>{const tr=document.createElement('tr'); tr.innerHTML='<td class="nowrap">'+(r.oaci||'')+'</td><td class="nowrap">'+lpad(r.control,4)+' · '+(r.nombres||'')+'</td><td>'+(r.INICIA||'')+'</td><td>'+(r.TERMINA||'')+'</td><td class="text-center">'+(r.DIAS||'0')+'</td><td>'+(r.UMF||'')+'</td><td>'+(r.DIAGNOSTICO||'')+'</td><td>'+(r.FOLIO||'')+'</td><td class="nowrap"><button class="btn btn-sm btn-outline-primary">Editar</button></td><td class="nowrap"><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>'; tb.appendChild(tr);});}
+
+  const el = {
+    error: document.getElementById('prestError'),
+    modeBtns: Array.from(document.querySelectorAll('#modeSwitch [data-mode]')),
+    personaWrap: document.getElementById('personaSelectWrap'),
+    personaSelect: document.getElementById('personaSelect'),
+    personaYearWrap: document.getElementById('anioPersonaWrap'),
+    personaYearSelect: document.getElementById('anioPersonaSelect'),
+    yearWrap: document.getElementById('anioSelectWrap'),
+    yearSelect: document.getElementById('anioSelect'),
+    oaciAll: document.getElementById('oaciAll'),
+    oaciList: document.getElementById('oaciList'),
+    pecosPersona: document.getElementById('pecosPersona'),
+    pecosYear: document.getElementById('pecosAnio'),
+    txtPersona: document.getElementById('txtPersona'),
+    txtYear: document.getElementById('txtAnio'),
+    vacPersona: document.getElementById('vacPersona'),
+    vacYear: document.getElementById('vacAnio'),
+    incPersona: document.getElementById('incPersona'),
+    incYear: document.getElementById('incAnio'),
+    tables: {
+      pecosPersona: document.getElementById('tblPecosPersona'),
+      pecosYear: document.getElementById('tblPecosYear'),
+      txtPersona: document.getElementById('tblTxtPersona'),
+      txtYear: document.getElementById('tblTxtYear'),
+      vacPersonaSummary: document.getElementById('tblVacPersonaSummary'),
+      vacPersonaMov: document.getElementById('tblVacPersonaMov'),
+      vacYear: document.getElementById('tblVacYear'),
+      incPersona: document.getElementById('tblIncPersona'),
+      incYear: document.getElementById('tblIncYear'),
+    },
+    vacPersonaSummaryMeta: document.getElementById('vacPersonaSummaryMeta'),
+  };
+
+  function formatControl(value) {
+    const str = String(value || '');
+    return str.padStart(4, '0');
+  }
+
+  function setError(msg) {
+    if (!el.error) return;
+    if (!msg) {
+      el.error.classList.add('d-none');
+      el.error.textContent = '';
+      return;
+    }
+    el.error.textContent = msg;
+    el.error.classList.remove('d-none');
+  }
+
+  function selectedStations() {
+    if (!state.init || !Array.isArray(state.init.stations)) return [];
+    const switches = Array.from(document.querySelectorAll('.oaci-switch'));
+    if (!switches.length) return [];
+    if (el.oaciAll && el.oaciAll.checked) {
+      return state.init.stations.slice();
+    }
+    const active = switches.filter((sw) => sw.checked).map((sw) => sw.getAttribute('data-oaci'));
+    return active.length ? active : state.init.stations.slice();
+  }
+
+  function toggleModeElements() {
+    const personaMode = state.mode === 'persona';
+    if (el.personaWrap) el.personaWrap.classList.toggle('d-none', !personaMode);
+    if (el.personaYearWrap) el.personaYearWrap.classList.toggle('d-none', !personaMode);
+    if (el.yearWrap) el.yearWrap.classList.toggle('d-none', personaMode);
+    if (el.pecosPersona) el.pecosPersona.classList.toggle('d-none', !personaMode);
+    if (el.pecosYear) el.pecosYear.classList.toggle('d-none', personaMode);
+    if (el.txtPersona) el.txtPersona.classList.toggle('d-none', !personaMode);
+    if (el.txtYear) el.txtYear.classList.toggle('d-none', personaMode);
+    if (el.vacPersona) el.vacPersona.classList.toggle('d-none', !personaMode);
+    if (el.vacYear) el.vacYear.classList.toggle('d-none', personaMode);
+    if (el.incPersona) el.incPersona.classList.toggle('d-none', !personaMode);
+    if (el.incYear) el.incYear.classList.toggle('d-none', personaMode);
+    el.modeBtns.forEach((btn) => {
+      const mode = btn.getAttribute('data-mode');
+      btn.classList.toggle('btn-primary', mode === state.mode);
+      btn.classList.toggle('btn-outline-secondary', mode !== state.mode);
+    });
+  }
+
+  function setMode(mode) {
+    if (mode !== 'persona' && mode !== 'anio') return;
+    state.mode = mode;
+    localStorage.setItem(storageKey, mode);
+    toggleModeElements();
+    refreshActive();
+  }
+
+  function activeTab() {
+    const active = document.querySelector('#prestTabs .nav-link.active');
+    return active ? active.id.replace('tab-', '') : 'pecos';
+  }
+
+  function stationsParam() {
+    const stations = selectedStations();
+    return stations.length ? stations.join(',') : '';
+  }
+
+  async function apiFetch(endpoint, params) {
+    const url = new URL(API_BASE + endpoint, window.location.origin);
+    Object.entries(params || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        url.searchParams.set(key, value);
+      }
+    });
+    const resp = await fetch(url.toString(), {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    if (data && data.ok === false) {
+      throw new Error(data.error || 'Solicitud rechazada');
+    }
+    return data;
+  }
+
+  function clearTable(table, cols, message) {
+    if (!table || !table.tBodies.length) return;
+    const row = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = cols;
+    td.className = 'text-secondary';
+    td.textContent = message;
+    row.appendChild(td);
+    table.tBodies[0].innerHTML = '';
+    table.tBodies[0].appendChild(row);
+  }
+
+  function renderPecosPersona(data) {
+    const table = el.tables.pecosPersona;
+    if (!table) return;
+    const rows = data.rows || [];
+    const tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+    if (!rows.length) {
+      clearTable(table, 15, 'Sin datos…');
+      return;
+    }
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.year}</td>
+        ${Array.from({ length: 12 }, (_, i) => `<td class="text-center">${row['dia' + (i + 1)] ?? '0'}</td>`).join('')}
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderPecosYear(data) {
+    const table = el.tables.pecosYear;
+    if (!table) return;
+    const rows = data.rows || [];
+    const tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+    if (!rows.length) {
+      clearTable(table, 15, 'Sin datos…');
+      return;
+    }
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="nowrap">${row.oaci || ''}</td>
+        <td class="nowrap">${formatControl(row.control)} · ${row.nombres || ''}</td>
+        ${Array.from({ length: 12 }, (_, i) => `<td class="text-center">${row['dia' + (i + 1)] ?? '0'}</td>`).join('')}
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderTxtPersona(data) {
+    const table = el.tables.txtPersona;
+    if (!table) return;
+    const rows = data.rows || [];
+    const tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+    if (!rows.length) {
+      clearTable(table, 10, 'Sin datos…');
+      return;
+    }
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.year}</td>
+        <td class="text-center">${row.js ?? '0'}</td>
+        <td class="text-center">${row.vs ?? '0'}</td>
+        <td class="text-center">${row.dm ?? '0'}</td>
+        <td class="text-center">${row.ds ?? '0'}</td>
+        <td class="text-center">${row.muert ?? '0'}</td>
+        <td class="text-center">${row.ono ?? '0'}</td>
+        <td>${row.fnac || ''}</td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderTxtYear(data) {
+    const table = el.tables.txtYear;
+    if (!table) return;
+    const rows = data.rows || [];
+    const tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+    if (!rows.length) {
+      clearTable(table, 11, 'Sin datos…');
+      return;
+    }
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="nowrap">${row.oaci || ''}</td>
+        <td class="nowrap">${formatControl(row.control)} · ${row.nombres || ''}</td>
+        <td class="text-center">${row.js ?? '0'}</td>
+        <td class="text-center">${row.vs ?? '0'}</td>
+        <td class="text-center">${row.dm ?? '0'}</td>
+        <td class="text-center">${row.ds ?? '0'}</td>
+        <td class="text-center">${row.muert ?? '0'}</td>
+        <td class="text-center">${row.ono ?? '0'}</td>
+        <td>${row.fnac || ''}</td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderFlags(flags) {
+    if (!Array.isArray(flags) || !flags.length) return '';
+    return flags
+      .map((flag) => {
+        const type = flag === 'danger' ? 'danger' : 'warning';
+        const label = flag === 'danger' ? 'Riesgo' : 'Pendiente';
+        return `<span class="badge bg-${type} text-dark me-1">${label}</span>`;
+      })
+      .join('');
+  }
+
+  function renderVacPersona(data) {
+    const summaryTable = el.tables.vacPersonaSummary;
+    const movTable = el.tables.vacPersonaMov;
+    if (!summaryTable || !movTable) return;
+    const tbodySummary = summaryTable.tBodies[0];
+    const tbodyMov = movTable.tBodies[0];
+    tbodySummary.innerHTML = '';
+    tbodyMov.innerHTML = '';
+
+    if (!data || !data.summary) {
+      clearTable(summaryTable, 11, 'Seleccione un trabajador…');
+      clearTable(movTable, 8, 'Sin datos…');
+      return;
+    }
+    const s = data.summary;
+    const persona = data.persona || {};
+    if (el.vacPersonaSummaryMeta) {
+      const label = persona.nombres ? `${formatControl(persona.control)} · ${persona.nombres}` : 'Resumen anual';
+      el.vacPersonaSummaryMeta.textContent = `${label} — Año ${s.year}`;
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${s.year}</td>
+      <td class="text-center">${s.dias_asig}</td>
+      <td class="text-center">${s.pr_asig}</td>
+      <td class="text-center">${s.ant_asig}</td>
+      <td class="text-center">${s.dias_usados}</td>
+      <td class="text-center">${s.pr_usados}</td>
+      <td class="text-center">${s.ant_usados}</td>
+      <td class="text-center">${s.dias_left}</td>
+      <td class="text-center">${s.pr_left}</td>
+      <td class="text-center">${s.ant_left}</td>
+      <td>${renderFlags(s.flags)}</td>
+    `;
+    tbodySummary.appendChild(tr);
+
+    const rows = data.rows || [];
+    if (!rows.length) {
+      clearTable(movTable, 8, 'Sin movimientos…');
+    } else {
+      rows.forEach((row) => {
+        const movTr = document.createElement('tr');
+        movTr.innerHTML = `
+          <td>${row.year}</td>
+          <td>${row.tipo || ''}</td>
+          <td class="text-center">${row.periodo || ''}</td>
+          <td>${row.inicia || ''}</td>
+          <td>${row.reanuda || ''}</td>
+          <td class="text-center">${row.dias ?? 0}</td>
+          <td class="text-center">${row.resta ?? ''}</td>
+          <td>${row.obs || ''}</td>
+        `;
+        tbodyMov.appendChild(movTr);
+      });
+    }
+  }
+
+  function renderVacYear(data) {
+    const table = el.tables.vacYear;
+    if (!table) return;
+    const rows = data.rows || [];
+    const tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+    if (!rows.length) {
+      clearTable(table, 12, 'Sin datos…');
+      return;
+    }
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="nowrap">${row.estacion || ''}</td>
+        <td class="nowrap">${row.control_fmt || formatControl(row.control)} · ${row.nombres || ''}</td>
+        <td class="text-center">${row.dias_asig}</td>
+        <td class="text-center">${row.pr_asig}</td>
+        <td class="text-center">${row.ant_asig}</td>
+        <td class="text-center">${row.dias_usados}</td>
+        <td class="text-center">${row.pr_usados}</td>
+        <td class="text-center">${row.ant_usados}</td>
+        <td class="text-center">${row.dias_left}</td>
+        <td class="text-center">${row.pr_left}</td>
+        <td class="text-center">${row.ant_left}</td>
+        <td>${renderFlags(row.flags)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderIncPersona(data) {
+    const table = el.tables.incPersona;
+    if (!table) return;
+    const rows = data.rows || [];
+    const tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+    if (!rows.length) {
+      clearTable(table, 9, 'Sin datos…');
+      return;
+    }
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      const yearText = row.INICIA && row.INICIA.includes('/') ? row.INICIA.split('/').pop() : '';
+      tr.innerHTML = `
+        <td>${yearText || ''}</td>
+        <td>${row.FOLIO || ''}</td>
+        <td>${row.INICIA || ''}</td>
+        <td>${row.TERMINA || ''}</td>
+        <td class="text-center">${row.DIAS ?? 0}</td>
+        <td>${row.UMF || ''}</td>
+        <td>${row.DIAGNOSTICO || ''}</td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderIncYear(data) {
+    const table = el.tables.incYear;
+    if (!table) return;
+    const rows = data.rows || [];
+    const tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+    if (!rows.length) {
+      clearTable(table, 10, 'Sin datos…');
+      return;
+    }
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="nowrap">${row.oaci || ''}</td>
+        <td class="nowrap">${formatControl(row.control)} · ${row.nombres || ''}</td>
+        <td>${row.FOLIO || ''}</td>
+        <td>${row.INICIA || ''}</td>
+        <td>${row.TERMINA || ''}</td>
+        <td class="text-center">${row.DIAS ?? 0}</td>
+        <td>${row.UMF || ''}</td>
+        <td>${row.DIAGNOSTICO || ''}</td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function refreshYearsSelect(select, years, placeholder) {
+    if (!select) return;
+    select.innerHTML = '';
+    years.forEach((year) => {
+      const opt = document.createElement('option');
+      opt.value = year;
+      opt.textContent = year;
+      select.appendChild(opt);
+    });
+    if (placeholder !== undefined) {
+      select.value = String(placeholder);
+    }
+  }
+
+  async function refreshActive() {
+    if (!state.init) return;
+    const tab = activeTab();
+    const personaMode = state.mode === 'persona';
+    const params = {};
+    if (personaMode) {
+      params.mode = 'persona';
+      params.control = state.personaControl;
+      params.year = state.personaYear;
+    } else {
+      params.mode = 'anio';
+      params.year = state.year;
+      params.stations = stationsParam();
+    }
+    try {
+      setError('');
+      if (tab === 'pecos') {
+        const data = await apiFetch('pecos_list.php', params);
+        if (personaMode) renderPecosPersona(data);
+        else renderPecosYear(data);
+      } else if (tab === 'txt') {
+        const data = await apiFetch('txt_list.php', params);
+        if (personaMode) renderTxtPersona(data);
+        else renderTxtYear(data);
+      } else if (tab === 'vac') {
+        const data = await apiFetch('vacaciones_list.php', params);
+        if (personaMode) {
+          renderVacPersona(data);
+          if (Array.isArray(data.available_years) && data.available_years.length && el.personaYearSelect) {
+            const years = Array.from(new Set([...data.available_years, ...state.init.years]));
+            years.sort((a, b) => b - a);
+            refreshYearsSelect(el.personaYearSelect, years, state.personaYear);
+          }
+        } else {
+          renderVacYear(data);
+        }
+      } else if (tab === 'inc') {
+        const data = await apiFetch('incapacidades_list.php', params);
+        if (personaMode) renderIncPersona(data);
+        else renderIncYear(data);
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Error al cargar datos');
+    }
+  }
+
+  function handlePersonaChange() {
+    if (!el.personaSelect) return;
+    state.personaControl = el.personaSelect.value || '';
+    refreshActive();
+  }
+
+  function handlePersonaYearChange() {
+    if (!el.personaYearSelect) return;
+    state.personaYear = parseInt(el.personaYearSelect.value, 10) || state.personaYear;
+    refreshActive();
+  }
+
+  function handleYearChange() {
+    if (!el.yearSelect) return;
+    state.year = parseInt(el.yearSelect.value, 10) || state.year;
+    refreshActive();
+  }
+
+  function bindEvents() {
+    el.modeBtns.forEach((btn) => {
+      btn.addEventListener('click', () => setMode(btn.getAttribute('data-mode')));
+    });
+    if (el.personaSelect) el.personaSelect.addEventListener('change', handlePersonaChange);
+    if (el.personaYearSelect) el.personaYearSelect.addEventListener('change', handlePersonaYearChange);
+    if (el.yearSelect) el.yearSelect.addEventListener('change', handleYearChange);
+    if (el.oaciAll) {
+      el.oaciAll.addEventListener('change', () => {
+        const on = el.oaciAll.checked;
+        document.querySelectorAll('.oaci-switch').forEach((sw) => {
+          sw.checked = on;
+        });
+        refreshActive();
+      });
+    }
+    document.addEventListener('shown.bs.tab', (ev) => {
+      if (ev.target && ev.target.id && ev.target.id.startsWith('tab-')) {
+        refreshActive();
+      }
+    });
+  }
+
+  function populateInit(data) {
+    state.init = data;
+    state.personaYear = Array.isArray(data.years) && data.years.length ? data.years[0] : state.personaYear;
+    state.year = state.personaYear;
+    if (el.personaSelect) {
+      el.personaSelect.innerHTML = '<option value="">Seleccione…</option>' +
+        (data.personas || [])
+          .map((p) => `<option value="${p.control}">${p.oaci ? `${p.oaci} · ` : ''}${formatControl(p.control)} · ${p.nombres || ''}</option>`)
+          .join('');
+    }
+    if (el.personaYearSelect && Array.isArray(data.years)) {
+      refreshYearsSelect(el.personaYearSelect, data.years, state.personaYear);
+    }
+    if (el.yearSelect && Array.isArray(data.years)) {
+      refreshYearsSelect(el.yearSelect, data.years, state.year);
+    }
+    if (el.oaciList) {
+      el.oaciList.innerHTML = (data.stations || [])
+        .map((oaci) => `
+          <div class="form-check form-switch">
+            <input class="form-check-input oaci-switch" type="checkbox" role="switch" id="oaci_${oaci}" data-oaci="${oaci}" checked>
+            <label class="form-check-label" for="oaci_${oaci}">${oaci}</label>
+          </div>
+        `)
+        .join('');
+      document.querySelectorAll('.oaci-switch').forEach((sw) => {
+        sw.addEventListener('change', () => {
+          if (!sw.checked && el.oaciAll) {
+            el.oaciAll.checked = false;
+          }
+          refreshActive();
+        });
+      });
+      if (el.oaciAll) el.oaciAll.checked = true;
+    }
+  }
+
+  async function init() {
+    try {
+      const data = await apiFetch('prestaciones_init.php', {});
+      populateInit(data);
+      bindEvents();
+      toggleModeElements();
+      refreshActive();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'No se pudo iniciar el módulo');
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', init);
 })();

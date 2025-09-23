@@ -75,21 +75,51 @@ if (!$u) {
 }
 
 /* Distribución en varias columnas para no cascada */
-#oaciList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4rem .8rem;
-}
-#oaciList .form-check {
-  flex: 1 1 45%; /* 2 columnas; cambia a 30% para 3 columnas */
-}
-#oaciList .form-check-label {
-  font-size: .9rem;
-}
-.card .card-table .card-header {
-	border-radius: 0 15px 15px 15px;
-	margin-top: 0px !important;
-}
+    #oaciList {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .4rem .8rem;
+    }
+    #oaciList .form-check {
+      flex: 1 1 calc(50% - .8rem);
+    }
+    #oaciList .form-check-label {
+      font-size: .85rem;
+    }
+    .nav-tabs {
+      border-bottom: 0;
+      margin-bottom: 0;
+    }
+    .nav-tabs .nav-link {
+      border: 1px solid var(--bs-border-color);
+      border-bottom: none;
+      border-radius: .75rem .75rem 0 0;
+      margin-right: .25rem;
+      background: var(--bs-body-bg);
+      color: var(--bs-secondary-color);
+    }
+    .nav-tabs .nav-link.active {
+      background: var(--bs-card-bg);
+      color: var(--bs-body-color);
+      font-weight: 600;
+    }
+    .tab-content {
+      border: 1px solid var(--bs-border-color);
+      border-top: none;
+      border-radius: 0 0 .75rem .75rem;
+      padding: 1rem;
+      background: var(--bs-card-bg);
+    }
+    .tab-content .card {
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .tab-content .card-header {
+      border-radius: 0;
+      border-bottom: 1px solid var(--bs-border-color);
+      padding-bottom: .5rem;
+    }
   </style>
 </head>
 <body>
@@ -122,26 +152,45 @@ if (!$u) {
         <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
         <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Diagnóstico</a>
       <?php endif; ?>      <a class="btn btn-outline-primary btn-sm" href="/public/index.php">Inicio</a>
-      <div class="dropdown">
-        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-          <?= htmlspecialchars($u['nombre'] ?? $u['email'] ?? 'Usuario') ?>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" href="account.php">Mi cuenta</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="logout.php">Cerrar sesión</a></li>
-        </ul>
-      </div>
-    </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap toolbar-gap">
+              <div id="personaSelectWrap" class="me-2" style="min-width:280px">
+              <div id="anioPersonaWrap" class="me-2" style="min-width:160px">
+                <select id="anioPersonaSelect" class="form-select" aria-label="Año (persona)"></select>
+              </div>
 
-  </div>
-</nav>
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-12 mb-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                                                <div class="form-check form-switch all mb-2">
+                                                  <input class="form-check-input all" type="checkbox" role="switch" id="oaciAll"><label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
+                                                  </div>
+          <div id="prestError" class="alert alert-warning d-none mb-0"></div>
+
+            <div class="card card-table">
+            <div class="card card-table">
+            <div class="card card-table">
+            <div class="card card-table">
+            <div class="card card-table">
+              <div class="card-body">
+                <div class="mb-4">
+                  <div class="text-secondary small mb-2" id="vacPersonaSummaryMeta">Resumen anual</div>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-striped align-middle" id="tblVacPersonaSummary">
+                      <thead><tr><th>Año</th><th>Asignadas VAC</th><th>Asignadas PR</th><th>Asignadas ANT</th><th>Usadas VAC</th><th>Usadas PR</th><th>Usadas ANT</th><th>Restan VAC</th><th>Restan PR</th><th>Restan ANT</th><th>Flags</th></tr></thead>
+                      <tbody><tr><td colspan="11" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div>
+                  <div class="text-secondary small fw-semibold mb-2">Movimientos registrados</div>
+                  <div class="sticky-wrap">
+                    <table class="table table-sm table-striped table-hover align-middle" id="tblVacPersonaMov">
+                      <thead><tr><th>Año</th><th>Tipo</th><th>Periodo</th><th>Inicia</th><th>Reanuda</th><th>Días</th><th>Restan</th><th>Observaciones</th></tr></thead>
+                      <tbody><tr><td colspan="8" class="text-secondary">Sin datos…</td></tr></tbody>
+                    </table>
+                  </div>
+                </div>
+            <div class="card card-table">
+                  <thead><tr><th>Estación</th><th>Trabajador</th><th>Asignadas VAC</th><th>Asignadas PR</th><th>Asignadas ANT</th><th>Usadas VAC</th><th>Usadas PR</th><th>Usadas ANT</th><th>Restan VAC</th><th>Restan PR</th><th>Restan ANT</th><th>Flags</th></tr></thead>
+            <div class="card card-table">
+            <div class="card card-table">
             <div class="d-flex align-items-center gap-3 mb-3">
     <div>
       <h1 class="h4 mb-1">Personal</h1>
