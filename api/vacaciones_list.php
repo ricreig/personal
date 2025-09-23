@@ -30,15 +30,8 @@ if ($mode === 'persona') {
         echo json_encode(['ok' => true, 'mode' => 'persona', 'rows' => [], 'summary' => null], JSON_UNESCAPED_UNICODE);
         exit;
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
-    $st = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, e.fingreso, es.oaci
-=======
+
     $st = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, es.oaci
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
-=======
-    $st = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, es.oaci
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
                           FROM empleados e
                           LEFT JOIN estaciones es ON es.id_estacion = e.estacion
                           WHERE e.control = ? LIMIT 1');
@@ -113,15 +106,7 @@ if (!$stations) {
     exit;
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-$empStmt = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, e.fingreso, es.oaci
-=======
 $empStmt = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, es.oaci
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
-=======
-$empStmt = $pdo->prepare('SELECT e.control, e.nombres, e.ant, e.tipo1, es.oaci
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
                            FROM empleados e
                            LEFT JOIN estaciones es ON es.id_estacion = e.estacion
                            WHERE es.oaci IN (' . implode(',', array_fill(0, count($stations), '?')) . ')
