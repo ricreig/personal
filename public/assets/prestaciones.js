@@ -37,8 +37,7 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
       pecosYear: document.getElementById('tblPecosYear'),
       txtPersona: document.getElementById('tblTxtPersona'),
       txtYear: document.getElementById('tblTxtYear'),
-      vacPersonaSummary: document.getElementById('tblVacPersonaSummary'),
-      vacPersonaMov: document.getElementById('tblVacPersonaMov'),
+      vacPersona: document.getElementById('tblVacPersona'),
       vacYear: document.getElementById('tblVacYear'),
       incPersona: document.getElementById('tblIncPersona'),
       incYear: document.getElementById('tblIncYear'),
@@ -76,16 +75,23 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
 function toggleModeElements() {
   const personaMode = state.mode === 'persona';
 
-  // Mantener visible el campo de nombre; solo deshabilitar en modo "Año"
-  if (el.personaWrap) el.personaWrap.classList.remove('d-none');
-  if (el.personaSelect) el.personaSelect.toggleAttribute('disabled', !personaMode);
+  if (el.personaWrap) {
+    el.personaWrap.classList.toggle('d-none', !personaMode);
+  }
+  if (el.personaSelect) {
+    el.personaSelect.toggleAttribute('disabled', !personaMode);
+  }
 
-  if (el.personaYearWrap) el.personaYearWrap.classList.toggle('d-none', !personaMode);
+  if (el.personaYearWrap) {
+    el.personaYearWrap.classList.add('d-none');
+  }
+  if (el.personaYearSelect) {
+    el.personaYearSelect.setAttribute('disabled', 'disabled');
+  }
+
   if (el.yearWrap) el.yearWrap.classList.toggle('d-none', personaMode);
-
-  // Si quieres mostrar también el "Trabajador (anio)" siempre visible pero deshabilitado:
-  // if (el.yearpersonaWrap) el.yearpersonaWrap.classList.remove('d-none');
-  // if (el.yearpersonaSelect) el.yearpersonaSelect.toggleAttribute('disabled', true);
+  if (el.yearpersonaWrap) el.yearpersonaWrap.classList.add('d-none');
+  if (el.yearpersonaSelect) el.yearpersonaSelect.setAttribute('disabled', 'disabled');
 
   if (el.pecosPersona) el.pecosPersona.classList.toggle('d-none', !personaMode);
   if (el.pecosYear) el.pecosYear.classList.toggle('d-none', personaMode);
@@ -171,8 +177,8 @@ function toggleModeElements() {
       tr.innerHTML = `
         <td>${row.year}</td>
         ${Array.from({ length: 12 }, (_, i) => `<td class="text-center">${row['dia' + (i + 1)] ?? '0'}</td>`).join('')}
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="pecos" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-year="${row.year}">Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="pecos" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-year="${row.year}">Eliminar</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -188,14 +194,15 @@ function toggleModeElements() {
       clearTable(table, 15, 'Sin datos…');
       return;
     }
+    const targetYear = data.year ?? state.year;
     rows.forEach((row) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="nowrap">${row.oaci || ''}</td>
         <td class="nowrap">${formatControl(row.control)} · ${row.nombres || ''}</td>
         ${Array.from({ length: 12 }, (_, i) => `<td class="text-center">${row['dia' + (i + 1)] ?? '0'}</td>`).join('')}
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="pecos" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}">Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="pecos" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}">Eliminar</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -222,8 +229,8 @@ function toggleModeElements() {
         <td class="text-center">${row.muert ?? '0'}</td>
         <td class="text-center">${row.ono ?? '0'}</td>
         <td>${row.fnac || ''}</td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="txt" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-year="${row.year}">Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="txt" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-year="${row.year}">Eliminar</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -239,6 +246,7 @@ function toggleModeElements() {
       clearTable(table, 11, 'Sin datos…');
       return;
     }
+    const targetYear = data.year ?? state.year;
     rows.forEach((row) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -251,8 +259,8 @@ function toggleModeElements() {
         <td class="text-center">${row.muert ?? '0'}</td>
         <td class="text-center">${row.ono ?? '0'}</td>
         <td>${row.fnac || ''}</td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="txt" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}">Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="txt" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}">Eliminar</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -269,61 +277,62 @@ function toggleModeElements() {
       .join('');
   }
 
-  function renderVacPersona(data) {
-    const summaryTable = el.tables.vacPersonaSummary;
-    const movTable = el.tables.vacPersonaMov;
-    if (!summaryTable || !movTable) return;
-    const tbodySummary = summaryTable.tBodies[0];
-    const tbodyMov = movTable.tBodies[0];
-    tbodySummary.innerHTML = '';
-    tbodyMov.innerHTML = '';
+  function splitVacLeft(value) {
+    const total = Number(value ?? 0);
+    const safe = Number.isFinite(total) ? Math.max(0, total) : 0;
+    const vac1 = Math.min(10, safe);
+    const vac2 = Math.min(10, Math.max(0, safe - 10));
+    return { vac1, vac2 };
+  }
 
-    if (!data || !data.summary) {
-      clearTable(summaryTable, 11, 'Seleccione un trabajador…');
-      clearTable(movTable, 8, 'Sin datos…');
+  function renderActionCell(scope, type, row) {
+    const controlValue = row.control ?? row.control_fmt ?? '';
+    const control = String(controlValue ?? '');
+    const attrs = `data-prest-type="${type}" data-prest-scope="${scope}" data-prest-control="${control}"`;
+    const yearValue = row.year ?? '';
+    const yearAttr = yearValue !== '' ? ` data-prest-year="${yearValue}"` : '';
+    const flags = renderFlags(row.flags);
+    return `
+      <div class="d-inline-flex align-items-center gap-2 flex-wrap">
+        ${flags ? `<span class="text-nowrap">${flags}</span>` : ''}
+        <div class="btn-group btn-group-sm">
+          <button type="button" class="btn btn-outline-primary" data-prest-action="edit" ${attrs}${yearAttr}>Editar</button>
+          <button type="button" class="btn btn-outline-danger" data-prest-action="delete" ${attrs}${yearAttr}>Eliminar</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderVacPersona(data) {
+    const table = el.tables.vacPersona;
+    if (!table) return;
+    const tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+
+    const rows = Array.isArray(data?.summaries) && data.summaries.length
+      ? data.summaries
+      : (data && data.summary ? [data.summary] : []);
+    if (!rows.length) {
+      const msg = state.personaControl ? 'Sin datos…' : 'Seleccione un trabajador…';
+      clearTable(table, 8, msg);
       return;
     }
-    const s = data.summary;
-    const persona = data.persona || {};
-    if (el.vacPersonaSummaryMeta) {
-      const label = persona.nombres ? `${formatControl(persona.control)} · ${persona.nombres}` : 'Resumen anual';
-      el.vacPersonaSummaryMeta.textContent = `${label} — Año ${s.year}`;
-    }
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${s.year}</td>
-      <td class="text-center">${s.dias_asig}</td>
-      <td class="text-center">${s.pr_asig}</td>
-      <td class="text-center">${s.ant_asig}</td>
-      <td class="text-center">${s.dias_usados}</td>
-      <td class="text-center">${s.pr_usados}</td>
-      <td class="text-center">${s.ant_usados}</td>
-      <td class="text-center">${s.dias_left}</td>
-      <td class="text-center">${s.pr_left}</td>
-      <td class="text-center">${s.ant_left}</td>
-      <td>${renderFlags(s.flags)}</td>
-    `;
-    tbodySummary.appendChild(tr);
 
-    const rows = data.rows || [];
-    if (!rows.length) {
-      clearTable(movTable, 8, 'Sin movimientos…');
-    } else {
-      rows.forEach((row) => {
-        const movTr = document.createElement('tr');
-        movTr.innerHTML = `
-          <td>${row.year}</td>
-          <td>${row.tipo || ''}</td>
-          <td class="text-center">${row.periodo || ''}</td>
-          <td>${row.inicia || ''}</td>
-          <td>${row.reanuda || ''}</td>
-          <td class="text-center">${row.dias ?? 0}</td>
-          <td class="text-center">${row.resta ?? ''}</td>
-          <td>${row.obs || ''}</td>
-        `;
-        tbodyMov.appendChild(movTr);
-      });
-    }
+    rows.forEach((row) => {
+      const { vac1, vac2 } = splitVacLeft(row.dias_left);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-center">${row.year}</td>
+        <td class="text-center">${row.ant_asig}</td>
+        <td class="text-center">${row.pr_asig}</td>
+        <td class="text-center">${vac1}</td>
+        <td class="text-center">${vac2}</td>
+        <td class="text-center">${row.ant_usados}</td>
+        <td class="text-center">${row.pr_usados}</td>
+        <td class="nowrap">${renderActionCell('persona', 'vac', row)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
   }
 
   function renderVacYear(data) {
@@ -333,27 +342,44 @@ function toggleModeElements() {
     const tbody = table.tBodies[0];
     tbody.innerHTML = '';
     if (!rows.length) {
-      clearTable(table, 12, 'Sin datos…');
+      clearTable(table, 10, 'Sin datos…');
       return;
     }
     rows.forEach((row) => {
+      const { vac1, vac2 } = splitVacLeft(row.dias_left);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="nowrap">${row.estacion || ''}</td>
-        <td class="nowrap">${row.control_fmt || formatControl(row.control)} · ${row.nombres || ''}</td>
-        <td class="text-center">${row.dias_asig}</td>
-        <td class="text-center">${row.pr_asig}</td>
+        <td class="text-center">${row.control_fmt || formatControl(row.control)}</td>
+        <td>${row.nombres || ''}</td>
         <td class="text-center">${row.ant_asig}</td>
-        <td class="text-center">${row.dias_usados}</td>
-        <td class="text-center">${row.pr_usados}</td>
+        <td class="text-center">${row.pr_asig}</td>
+        <td class="text-center">${vac1}</td>
+        <td class="text-center">${vac2}</td>
         <td class="text-center">${row.ant_usados}</td>
-        <td class="text-center">${row.dias_left}</td>
-        <td class="text-center">${row.pr_left}</td>
-        <td class="text-center">${row.ant_left}</td>
-        <td>${renderFlags(row.flags)}</td>
+        <td class="text-center">${row.pr_usados}</td>
+        <td class="nowrap">${renderActionCell('anio', 'vac', row)}</td>
       `;
       tbody.appendChild(tr);
     });
+  }
+
+  function handleActionClick(event) {
+    const btn = event.target.closest('[data-prest-action]');
+    if (!btn) return;
+    event.preventDefault();
+    const detail = {
+      action: btn.getAttribute('data-prest-action') || '',
+      type: btn.getAttribute('data-prest-type') || '',
+      scope: btn.getAttribute('data-prest-scope') || '',
+      control: btn.getAttribute('data-prest-control') || '',
+      year: btn.getAttribute('data-prest-year') || '',
+      id: btn.getAttribute('data-prest-id') || '',
+    };
+    document.dispatchEvent(new CustomEvent('prestaciones:action', { detail }));
+    if (!btn.hasAttribute('data-prest-silent')) {
+      console.info('Acción prestaciones', detail);
+    }
   }
 
   function renderIncPersona(data) {
@@ -377,8 +403,8 @@ function toggleModeElements() {
         <td class="text-center">${row.DIAS ?? 0}</td>
         <td>${row.UMF || ''}</td>
         <td>${row.DIAGNOSTICO || ''}</td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="inc" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-id="${row.Id ?? row.id ?? ''}" data-prest-year="${yearText || ''}">Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="inc" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-id="${row.Id ?? row.id ?? ''}" data-prest-year="${yearText || ''}">Eliminar</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -394,6 +420,7 @@ function toggleModeElements() {
       clearTable(table, 10, 'Sin datos…');
       return;
     }
+    const targetYear = data.year ?? state.year;
     rows.forEach((row) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -405,8 +432,8 @@ function toggleModeElements() {
         <td class="text-center">${row.DIAS ?? 0}</td>
         <td>${row.UMF || ''}</td>
         <td>${row.DIAGNOSTICO || ''}</td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" disabled>Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" disabled>Eliminar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="inc" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}" data-prest-id="${row.Id ?? row.id ?? ''}">Editar</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="inc" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}" data-prest-id="${row.Id ?? row.id ?? ''}">Eliminar</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -507,6 +534,7 @@ function toggleModeElements() {
         refreshActive();
       });
     }
+    document.addEventListener('click', handleActionClick);
     document.addEventListener('shown.bs.tab', (ev) => {
       if (ev.target && ev.target.id && ev.target.id.startsWith('tab-')) {
         refreshActive();

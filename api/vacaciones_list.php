@@ -78,6 +78,16 @@ if ($mode === 'persona') {
         'ingreso' => $emp['fingreso'] ?? ($emp['ant'] ?? null),
         'puesto'  => $emp['tipo1'] ?? null,
     ];
+    if (!isset($years[$year])) {
+        $years[$year] = true;
+    }
+    $allYears = array_keys($years);
+    rsort($allYears, SORT_NUMERIC);
+    $allYears = array_map('intval', $allYears);
+    $summaries = [];
+    foreach ($allYears as $summaryYear) {
+        $summaries[] = vc_summary($persona, $movRows, (int)$summaryYear);
+    }
     $summary = vc_summary($persona, $movRows, $year);
     echo json_encode([
         'ok' => true,
@@ -91,12 +101,9 @@ if ($mode === 'persona') {
             'puesto' => $emp['tipo1'] ?? '',
         ],
         'summary' => $summary,
+        'summaries' => $summaries,
         'rows' => $movRows,
-        'available_years' => (function (array $years): array {
-            $keys = array_keys($years);
-            rsort($keys, SORT_NUMERIC);
-            return $keys;
-        })($years),
+        'available_years' => $allYears,
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

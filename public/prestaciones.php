@@ -288,8 +288,8 @@ if (!$u) {
               <div class="card-header fw-semibold">Vacaciones — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblVacPersona">
-                  <thead><tr><th>Año</th><th>Antigüedad (días)</th><th>PR</th><th>VAC 1</th><th>VAC 2</th><th>ANT usados</th><th>PR usados</th><th>Editar</th><th>Eliminar</th></tr></thead>
-                  <tbody><tr><td colspan="9" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
+                  <thead><tr><th>Año</th><th>Antigüedad (derecho)</th><th>PR (derecho)</th><th>VAC 1 (restantes)</th><th>VAC 2 (restantes)</th><th>ANT usados</th><th>PR usados</th><th>Acciones</th></tr></thead>
+                  <tbody><tr><td colspan="8" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
                 </table>
               </div>
             </div>
@@ -299,8 +299,8 @@ if (!$u) {
               <div class="card-header fw-semibold">Vacaciones — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle tbl-sticky" id="tblVacYear">
-                  <thead><tr><th>Estación</th><th>Trabajador</th><th>Antigüedad (días)</th><th>PR</th><th>VAC 1</th><th>VAC 2</th><th>ANT usados</th><th>PR usados</th><th>Editar</th><th>Eliminar</th></tr></thead>
-                  <tbody><tr><td class="text-secondary">Seleccione año…</td></tr></tbody>
+                  <thead><tr><th>Estación</th><th>No. Control</th><th>Nombre</th><th>Antigüedad (derecho)</th><th>PR (derecho)</th><th>VAC 1 (restantes)</th><th>VAC 2 (restantes)</th><th>ANT usados</th><th>PR usados</th><th>Acciones</th></tr></thead>
+                  <tbody><tr><td colspan="10" class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>
               </div>
             </div>
