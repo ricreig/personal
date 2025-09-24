@@ -10,6 +10,7 @@ if (!$u) {
   header('Location: ' . rtrim(BASE_URL, '/') . '/login.php?err=timeout');
   exit;
 }
+$role = (string)($u['role'] ?? 'viewer');
 ?>
 <!doctype html>
 <html lang="es" data-bs-theme="dark" data-theme="dark">
@@ -46,11 +47,17 @@ if (!$u) {
     </div>
 
     <!-- DERECHA: BOTONERA / MENÚ USUARIO -->
-    <div class="nav-right d-flex align-items-center justify-content-end gap-2">
-      <?php if (function_exists('is_admin') && is_admin()): ?>
-        <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
-        <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Diagnóstico</a>
-      <?php endif; ?>      <a class="btn btn-outline-primary btn-sm" href="/public/prestaciones.php">Prestaciones</a>
+      <div class="nav-right d-flex align-items-center justify-content-end gap-2">
+        <?php if ($role !== 'viewer'): ?>
+          <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#userCreateModal">
+            Crear usuario
+          </button>
+        <?php endif; ?>
+        <?php if (function_exists('is_admin') && is_admin()): ?>
+          <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
+          <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Diagnóstico</a>
+        <?php endif; ?>
+        <a class="btn btn-outline-primary btn-sm" href="/public/prestaciones.php">Prestaciones</a>
       <div class="dropdown">
         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           <?= htmlspecialchars($u['nombre'] ?? $u['email'] ?? 'Usuario') ?>
@@ -110,6 +117,68 @@ if (!$u) {
     </div>
 
 
+    <?php if ($role !== 'viewer'): ?>
+    <!-- Modal: Crear usuario -->
+    <div class="modal fade" id="userCreateModal" tabindex="-1" aria-hidden="true" data-user-role="<?= htmlspecialchars($role) ?>">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header border-0">
+            <h5 class="modal-title">Crear usuario</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <form id="userCreateForm" class="row g-3">
+              <div class="col-12 col-sm-6">
+                <label class="form-label" for="userCreateControl">Número de control</label>
+                <input id="userCreateControl" name="control" type="number" class="form-control" min="0" step="1" inputmode="numeric" required>
+              </div>
+              <div class="col-12 col-sm-6">
+                <label class="form-label" for="userCreateEmail">Correo electrónico</label>
+                <input id="userCreateEmail" name="email" type="email" class="form-control" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="userCreateName">Nombre completo</label>
+                <input id="userCreateName" name="nombre" type="text" class="form-control" required>
+              </div>
+              <div class="col-12 col-sm-6">
+                <label class="form-label" for="userCreateRole">Rol</label>
+                <select id="userCreateRole" name="role" class="form-select">
+                  <option value="admin">SuperUser (acceso total)</option>
+                  <option value="regional">Regional</option>
+                  <option value="estacion">Estación</option>
+                  <option value="viewer" selected>Solo visualización</option>
+                </select>
+              </div>
+              <div class="col-12 col-sm-6">
+                <label class="form-label" for="userCreatePass">Contraseña inicial</label>
+                <input id="userCreatePass" name="pass" type="text" class="form-control" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="userCreateStationsList">Estaciones asignadas</label>
+                <div id="userCreateStationsWrap" class="p-3 border rounded-3" style="background:rgba(20,26,38,.65);">
+                  <div id="userCreateStationsStatus" class="small text-secondary">Cargando estaciones disponibles…</div>
+                  <div id="userCreateStationsList" class="vstack gap-2 mt-2"></div>
+                </div>
+                <div class="form-text">Selecciona las estaciones que podrá consultar este usuario.</div>
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="userCreateActive" name="is_active" checked>
+                  <label class="form-check-label" for="userCreateActive">Activo</label>
+                </div>
+              </div>
+            </form>
+            <div id="userCreateMsg" class="small text-secondary mt-2"></div>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" form="userCreateForm" class="btn btn-primary" id="userCreateSubmit">Guardar</button>
+          </div>
+      </div>
+    </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Modal: Documentos -->
     <div class="modal fade" id="docModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -167,5 +236,6 @@ if (!$u) {
 
 <?php require __DIR__ . '/includes/Foot-js.php'; ?>
 <!-- Toda la lógica de la tabla/documents vive en /public/assets/app.js -->
+</body>
 </body>
 </html>

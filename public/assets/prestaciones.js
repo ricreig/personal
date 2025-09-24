@@ -1,3 +1,4 @@
+/* global bootstrap */
 const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
 
 (function () {
@@ -43,6 +44,15 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
       incYear: document.getElementById('tblIncYear'),
     },
     vacPersonaSummaryMeta: document.getElementById('vacPersonaSummaryMeta'),
+    editModal: document.getElementById('editModal'),
+    editModalTitle: document.getElementById('editModalTitle'),
+    editForm: document.getElementById('editForm'),
+    editMsg: document.getElementById('editMsg'),
+    editSaveBtn: document.getElementById('btnSaveEdit'),
+  };
+
+  const editState = {
+    detail: null,
   };
 
   function formatControl(value) {
@@ -375,10 +385,505 @@ function toggleModeElements() {
       control: btn.getAttribute('data-prest-control') || '',
       year: btn.getAttribute('data-prest-year') || '',
       id: btn.getAttribute('data-prest-id') || '',
+      button: btn,
+      row: btn.closest('tr') || null,
     };
     document.dispatchEvent(new CustomEvent('prestaciones:action', { detail }));
     if (!btn.hasAttribute('data-prest-silent')) {
       console.info('Acción prestaciones', detail);
+    }
+  }
+
+  function ensureModal() {
+    if (!el.editModal || typeof bootstrap === 'undefined') return null;
+    return bootstrap.Modal.getOrCreateInstance(el.editModal);
+  }
+
+  function setModalTitle(title) {
+    if (el.editModalTitle) {
+      el.editModalTitle.textContent = title || 'Editar registro';
+    }
+  }
+
+  function setModalMessage(message, tone) {
+    if (!el.editMsg) return;
+    el.editMsg.textContent = message || '';
+    el.editMsg.className = 'small mt-2';
+    if (message) {
+      const toneClass = tone === 'error' ? 'text-danger' : tone === 'success' ? 'text-success' : 'text-secondary';
+      el.editMsg.classList.add(toneClass);
+    } else {
+      el.editMsg.classList.add('text-secondary');
+    }
+  }
+
+  function resetEditForm() {
+    if (el.editForm) {
+      el.editForm.innerHTML = '';
+    }
+    setModalMessage('');
+    if (el.editSaveBtn) {
+      el.editSaveBtn.disabled = true;
+    }
+  }
+
+  function createInputField(field) {
+    const {
+      name,
+      label,
+      type = 'text',
+      value = '',
+      col = 'col-12',
+      attrs = {},
+      options = [],
+    } = field || {};
+    if (!name) return null;
+    if (type === 'hidden') {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      Object.entries(attrs).forEach(([k, v]) => input.setAttribute(k, v));
+      return input;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = col;
+    const labelEl = document.createElement('label');
+    labelEl.className = 'form-label';
+    labelEl.textContent = label || name;
+    let input;
+    if (type === 'select') {
+      input = document.createElement('select');
+      input.className = 'form-select';
+      input.name = name;
+      options.forEach((opt) => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label;
+        if (String(opt.value) === String(value)) {
+          option.selected = true;
+        }
+        input.appendChild(option);
+      });
+    } else if (type === 'textarea') {
+      input = document.createElement('textarea');
+      input.className = 'form-control';
+      input.name = name;
+      input.value = value;
+      input.rows = attrs.rows ? Number(attrs.rows) : 2;
+    } else {
+      input = document.createElement('input');
+      input.className = 'form-control';
+      input.type = type;
+      input.name = name;
+      input.value = value;
+    }
+    Object.entries(attrs).forEach(([k, v]) => {
+      if (k === 'rows' && type === 'textarea') return;
+      if (v !== undefined && v !== null && v !== '') {
+        input.setAttribute(k, v);
+      }
+    });
+    wrap.appendChild(labelEl);
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  function populateEditForm(fields) {
+    if (!el.editForm) return;
+    el.editForm.innerHTML = '';
+    fields.forEach((field) => {
+      const node = createInputField(field);
+      if (!node) return;
+      if (node.tagName === 'INPUT' && node.type === 'hidden') {
+        el.editForm.appendChild(node);
+      } else {
+        el.editForm.appendChild(node);
+      }
+    });
+    if (typeof window.applyDateMask === 'function') {
+      window.applyDateMask(el.editForm);
+    }
+  }
+
+  function getPersonaName(control) {
+    if (!state.init || !Array.isArray(state.init.personas)) return '';
+    const ctrl = String(control || '');
+    const persona = state.init.personas.find((p) => String(p.control) === ctrl);
+    return persona ? persona.nombres || '' : '';
+  }
+
+  function formatYearTitle(type, year) {
+    if (!year) return type;
+    return `${type} — ${year}`;
+  }
+
+  function toDateMask(value) {
+    const str = String(value || '').trim();
+    if (!str) return '';
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+    if (isoMatch) {
+      return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+    }
+    if (/^(\d{2})\/(\d{2})\/(\d{4})$/.test(str)) {
+      return str;
+    }
+    const digits = str.replace(/\D+/g, '').slice(0, 8);
+    if (digits.length === 8) {
+      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    }
+    if (digits.length === 6) {
+      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/20${digits.slice(4)}`;
+    }
+    return str;
+  }
+
+  function toDMY(value) {
+    const str = String(value || '').trim();
+    if (!str) return '';
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+    if (iso) {
+      return `${iso[3]}/${iso[2]}/${iso[1]}`;
+    }
+    return str;
+  }
+
+  async function openPecosEdit(detail) {
+    if (!detail.control || !detail.year) {
+      setModalMessage('Faltan datos del registro.', 'error');
+      ensureModal()?.show();
+      return;
+    }
+    setModalTitle(formatYearTitle('Editar PECO', detail.year));
+    setModalMessage('Cargando registro…', 'info');
+    ensureModal()?.show();
+    try {
+      const data = await apiFetch('pecos_get.php', { control: detail.control, year: detail.year });
+      const fields = [
+        { type: 'hidden', name: 'control', value: detail.control },
+        { type: 'hidden', name: 'year', value: detail.year },
+      ];
+      for (let i = 1; i <= 12; i += 1) {
+        const key = `dia${i}`;
+        fields.push({
+          name: key,
+          label: `D-${String(i).padStart(2, '0')}`,
+          type: 'number',
+          value: data ? data[key] ?? '' : '',
+          col: 'col-6 col-sm-4 col-md-3 col-lg-2',
+          attrs: { min: '0', step: '1', inputmode: 'numeric' },
+        });
+      }
+      populateEditForm(fields);
+      setModalMessage(`Control ${formatControl(detail.control)} · ${getPersonaName(detail.control)}`, 'info');
+      if (el.editSaveBtn) el.editSaveBtn.disabled = false;
+    } catch (err) {
+      console.error(err);
+      populateEditForm([]);
+      setModalMessage(err.message || 'No se pudo cargar el registro.', 'error');
+      if (el.editSaveBtn) el.editSaveBtn.disabled = true;
+    }
+  }
+
+  async function openTxtEdit(detail) {
+    if (!detail.control || !detail.year) {
+      setModalMessage('Faltan datos del registro.', 'error');
+      ensureModal()?.show();
+      return;
+    }
+    setModalTitle(formatYearTitle('Editar Tiempo x Tiempo', detail.year));
+    setModalMessage('Cargando registro…', 'info');
+    ensureModal()?.show();
+    try {
+      const data = await apiFetch('txt_get.php', { control: detail.control, year: detail.year });
+      const fields = [
+        { type: 'hidden', name: 'control', value: detail.control },
+        { type: 'hidden', name: 'year', value: detail.year },
+        { name: 'js', label: 'Jueves Santo', type: 'number', value: data?.js ?? '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+        { name: 'vs', label: 'Viernes Santo', type: 'number', value: data?.vs ?? '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+        { name: 'dm', label: 'Día de las Madres', type: 'number', value: data?.dm ?? '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+        { name: 'ds', label: 'SENEAM / ATC', type: 'number', value: data?.ds ?? '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+        { name: 'muert', label: 'Día de Muertos', type: 'number', value: data?.muert ?? '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+        { name: 'ono', label: 'Onomástico', type: 'number', value: data?.ono ?? '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+      ];
+      populateEditForm(fields);
+      setModalMessage(`Control ${formatControl(detail.control)} · ${getPersonaName(detail.control)}`, 'info');
+      if (el.editSaveBtn) el.editSaveBtn.disabled = false;
+    } catch (err) {
+      console.error(err);
+      populateEditForm([]);
+      setModalMessage(err.message || 'No se pudo cargar el registro.', 'error');
+      if (el.editSaveBtn) el.editSaveBtn.disabled = true;
+    }
+  }
+
+  function openVacEdit(detail) {
+    const now = new Date();
+    const defaultYear = detail.year ? parseInt(detail.year, 10) : now.getFullYear();
+    setModalTitle('Registrar movimiento de vacaciones');
+    ensureModal()?.show();
+    const fields = [
+      { type: 'hidden', name: 'id', value: detail.id || '' },
+      { type: 'hidden', name: 'control', value: detail.control || '' },
+      { name: 'year', label: 'Año', type: 'number', value: defaultYear, col: 'col-6 col-md-4', attrs: { min: '2010', max: String(now.getFullYear() + 1) } },
+      { name: 'tipo', label: 'Tipo', type: 'select', value: 'VAC', col: 'col-6 col-md-4', options: [
+        { value: 'VAC', label: 'Vacaciones' },
+        { value: 'PR', label: 'Recuperación (PR)' },
+        { value: 'ANT', label: 'Antigüedad' },
+      ] },
+      { name: 'periodo', label: 'Periodo', type: 'number', value: '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+      { name: 'inicia', label: 'Inicia', type: 'text', value: toDateMask(detail?.inicia || ''), col: 'col-6 col-md-4', attrs: { placeholder: 'dd/mm/aaaa', 'data-mask': 'date', inputmode: 'numeric', maxlength: '10' } },
+      { name: 'reanuda', label: 'Reanuda', type: 'text', value: toDateMask(detail?.reanuda || ''), col: 'col-6 col-md-4', attrs: { placeholder: 'dd/mm/aaaa', 'data-mask': 'date', inputmode: 'numeric', maxlength: '10' } },
+      { name: 'dias', label: 'Días usados', type: 'number', value: '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+      { name: 'resta', label: 'Días restantes', type: 'number', value: '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+      { name: 'obs', label: 'Observaciones', type: 'textarea', value: '', col: 'col-12', attrs: { maxlength: '50', rows: 2 } },
+    ];
+    populateEditForm(fields);
+    const persona = getPersonaName(detail.control);
+    const ctrl = detail.control ? formatControl(detail.control) : '';
+    setModalMessage(persona ? `Control ${ctrl} · ${persona}. Complete los datos del movimiento que desea registrar.` : 'Complete los datos del movimiento que desea registrar.', 'info');
+    if (el.editSaveBtn) el.editSaveBtn.disabled = false;
+  }
+
+  function extractIncRow(detail) {
+    const row = detail.row;
+    if (!row) return {};
+    const cells = Array.from(row.querySelectorAll('td'));
+    if (!cells.length) return {};
+    if (detail.scope === 'persona') {
+      return {
+        year: cells[0]?.textContent?.trim() || detail.year || '',
+        folio: cells[1]?.textContent?.trim() || '',
+        inicia: cells[2]?.textContent?.trim() || '',
+        termina: cells[3]?.textContent?.trim() || '',
+        dias: cells[4]?.textContent?.trim() || '',
+        umf: cells[5]?.textContent?.trim() || '',
+        diag: cells[6]?.textContent?.trim() || '',
+      };
+    }
+    return {
+      year: detail.year || '',
+      folio: cells[2]?.textContent?.trim() || '',
+      inicia: cells[3]?.textContent?.trim() || '',
+      termina: cells[4]?.textContent?.trim() || '',
+      dias: cells[5]?.textContent?.trim() || '',
+      umf: cells[6]?.textContent?.trim() || '',
+      diag: cells[7]?.textContent?.trim() || '',
+    };
+  }
+
+  function openIncEdit(detail) {
+    setModalTitle('Editar incapacidad');
+    ensureModal()?.show();
+    const parsed = extractIncRow(detail);
+    const fields = [
+      { type: 'hidden', name: 'id', value: detail.id || '0' },
+      { type: 'hidden', name: 'control', value: detail.control || '' },
+      { name: 'folio', label: 'Folio', type: 'text', value: parsed.folio || '', col: 'col-12 col-md-6', attrs: { maxlength: '12' } },
+      { name: 'inicia', label: 'Inicia', type: 'text', value: toDateMask(parsed.inicia), col: 'col-6 col-md-3', attrs: { placeholder: 'dd/mm/aaaa', 'data-mask': 'date', inputmode: 'numeric', maxlength: '10' } },
+      { name: 'termina', label: 'Termina', type: 'text', value: toDateMask(parsed.termina), col: 'col-6 col-md-3', attrs: { placeholder: 'dd/mm/aaaa', 'data-mask': 'date', inputmode: 'numeric', maxlength: '10' } },
+      { name: 'dias', label: 'Días', type: 'number', value: parsed.dias || '', col: 'col-6 col-md-3', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+      { name: 'umf', label: 'UMF', type: 'text', value: parsed.umf || '', col: 'col-6 col-md-3', attrs: { maxlength: '4' } },
+      { name: 'diag', label: 'Diagnóstico', type: 'textarea', value: parsed.diag || '', col: 'col-12', attrs: { rows: 3, maxlength: '52' } },
+    ];
+    populateEditForm(fields);
+    const persona = getPersonaName(detail.control);
+    const ctrl = detail.control ? formatControl(detail.control) : '';
+    setModalMessage(persona ? `Control ${ctrl} · ${persona}` : '', 'info');
+    if (el.editSaveBtn) el.editSaveBtn.disabled = false;
+  }
+
+  async function handleEdit(detail) {
+    if (!el.editForm || !el.editModal) return;
+    editState.detail = detail;
+    resetEditForm();
+    switch (detail.type) {
+      case 'pecos':
+        await openPecosEdit(detail);
+        break;
+      case 'txt':
+        await openTxtEdit(detail);
+        break;
+      case 'vac':
+        openVacEdit(detail);
+        break;
+      case 'inc':
+        openIncEdit(detail);
+        break;
+      default:
+        setModalTitle('Editar registro');
+        populateEditForm([]);
+        setModalMessage('Acción no soportada.', 'error');
+        ensureModal()?.show();
+        if (el.editSaveBtn) el.editSaveBtn.disabled = true;
+        break;
+    }
+  }
+
+  function formDataFromEdit() {
+    if (!el.editForm) return new FormData();
+    return new FormData(el.editForm);
+  }
+
+  async function savePecos(formData) {
+    const resp = await fetch(API_BASE + 'pecos_save.php', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data && data.ok === false) throw new Error(data.error || 'No se pudo guardar');
+  }
+
+  async function saveTxt(formData) {
+    const resp = await fetch(API_BASE + 'txt_save.php', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data && data.ok === false) throw new Error(data.error || 'No se pudo guardar');
+  }
+
+  async function saveVac(formData) {
+    const resp = await fetch(API_BASE + 'vacaciones_save.php', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data && data.ok === false) throw new Error(data.error || 'No se pudo guardar');
+  }
+
+  async function saveInc(formData) {
+    const resp = await fetch(API_BASE + 'incapacidades_save.php', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data && data.ok === false) throw new Error(data.error || 'No se pudo guardar');
+  }
+
+  async function handleSaveEdit() {
+    if (!editState.detail) return;
+    if (!el.editSaveBtn) return;
+    const detail = editState.detail;
+    const formData = formDataFromEdit();
+    if (detail.type === 'inc' || detail.type === 'vac') {
+      const fields = detail.type === 'inc' ? ['inicia', 'termina'] : ['inicia', 'reanuda'];
+      fields.forEach((field) => {
+        const value = formData.get(field);
+        if (value) {
+          formData.set(field, toDMY(value));
+        }
+      });
+    }
+    try {
+      el.editSaveBtn.disabled = true;
+      setModalMessage('Guardando…', 'info');
+      if (detail.type === 'pecos') {
+        await savePecos(formData);
+      } else if (detail.type === 'txt') {
+        await saveTxt(formData);
+      } else if (detail.type === 'vac') {
+        await saveVac(formData);
+      } else if (detail.type === 'inc') {
+        await saveInc(formData);
+      } else {
+        throw new Error('Acción no soportada');
+      }
+      setModalMessage('Cambios guardados correctamente.', 'success');
+      ensureModal()?.hide();
+      editState.detail = null;
+      refreshActive();
+    } catch (err) {
+      console.error(err);
+      setModalMessage(err.message || 'No se pudo guardar el registro.', 'error');
+    } finally {
+      if (el.editSaveBtn) el.editSaveBtn.disabled = false;
+    }
+  }
+
+  async function deletePecos(detail) {
+    if (!detail.control || !detail.year) return;
+    const formData = new FormData();
+    formData.append('control', detail.control);
+    formData.append('year', detail.year);
+    for (let i = 1; i <= 12; i += 1) {
+      formData.append(`dia${i}`, '0');
+    }
+    await savePecos(formData);
+  }
+
+  async function deleteTxt(detail) {
+    if (!detail.control || !detail.year) return;
+    const formData = new FormData();
+    formData.append('control', detail.control);
+    formData.append('year', detail.year);
+    formData.append('js', '0');
+    formData.append('vs', '0');
+    formData.append('dm', '0');
+    formData.append('ds', '0');
+    formData.append('muert', '0');
+    formData.append('ono', '0');
+    await saveTxt(formData);
+  }
+
+  async function deleteInc(detail) {
+    if (!detail.id) return;
+    const formData = new FormData();
+    formData.append('id', detail.id);
+    const resp = await fetch(API_BASE + 'incapacidades_delete.php', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data && data.ok === false) throw new Error(data.error || 'No se pudo eliminar');
+  }
+
+  async function handleDelete(detail) {
+    const { type } = detail;
+    try {
+      if (type === 'pecos') {
+        if (!window.confirm('¿Desea eliminar los datos de PECO para este año?')) return;
+        await deletePecos(detail);
+        refreshActive();
+      } else if (type === 'txt') {
+        if (!window.confirm('¿Desea eliminar los datos de Tiempo x Tiempo para este año?')) return;
+        await deleteTxt(detail);
+        refreshActive();
+      } else if (type === 'inc') {
+        if (!detail.id) {
+          window.alert('No se pudo determinar el registro a eliminar.');
+          return;
+        }
+        if (!window.confirm('¿Eliminar la incapacidad seleccionada?')) return;
+        await deleteInc(detail);
+        refreshActive();
+      } else if (type === 'vac') {
+        window.alert('Para eliminar un movimiento de vacaciones utilice el módulo correspondiente.');
+      } else {
+        window.alert('Acción no disponible.');
+      }
+    } catch (err) {
+      console.error(err);
+      window.alert(err.message || 'No se pudo completar la acción.');
+    }
+  }
+
+  function handlePrestAction(event) {
+    const detail = event.detail || {};
+    if (detail.action === 'edit') {
+      handleEdit(detail);
+    } else if (detail.action === 'delete') {
+      handleDelete(detail);
     }
   }
 
@@ -540,6 +1045,16 @@ function toggleModeElements() {
         refreshActive();
       }
     });
+    document.addEventListener('prestaciones:action', handlePrestAction);
+    if (el.editModal) {
+      el.editModal.addEventListener('hidden.bs.modal', () => {
+        editState.detail = null;
+        resetEditForm();
+      });
+    }
+    if (el.editSaveBtn) {
+      el.editSaveBtn.addEventListener('click', handleSaveEdit);
+    }
   }
 
   function populateInit(data) {
