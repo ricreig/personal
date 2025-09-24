@@ -25,8 +25,12 @@ $mapped = []; foreach ($map as $m) $mapped[$m['id_estacion']] = $m;
 <!doctype html>
 <html lang="es" data-bs-theme="dark" data-theme="dark">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Control Regional de Personal">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Mapeo de Estaciones</title>
   <?php require dirname(__DIR__) . '/public/includes/HEAD-CSS.php'; ?>
 
