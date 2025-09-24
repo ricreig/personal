@@ -822,10 +822,206 @@ const rtari = renderRTARI(row.rtari, row.rtari_vig);
     return dt;
   }
 
+  function initUserCreateModal() {
+    const modalEl = document.getElementById('userCreateModal');
+    if (!modalEl) return;
+    const form = modalEl.querySelector('#userCreateForm');
+    const msg = modalEl.querySelector('#userCreateMsg');
+    const submitBtn = modalEl.querySelector('#userCreateSubmit');
+    const activeInput = form ? form.querySelector('#userCreateActive') : null;
+    const stationList = form ? form.querySelector('#userCreateStationsList') : null;
+    const stationStatus = form ? form.querySelector('#userCreateStationsStatus') : null;
+    const creatorRole = (modalEl.getAttribute('data-user-role') || 'viewer').toLowerCase();
+    let stationsPromise = null;
+
+    const setStationStatus = (text, tone = 'secondary') => {
+      if (!stationStatus) return;
+      stationStatus.textContent = text;
+      stationStatus.className = `small text-${tone}`;
+    };
+
+    const renderStations = (stations) => {
+      if (!stationList) return;
+      stationList.innerHTML = '';
+      const rows = Array.isArray(stations) ? [...stations] : [];
+      if (!rows.length) {
+        setStationStatus('No tienes estaciones asignadas. Solicita al administrador mapearlas antes de crear usuarios.', 'warning');
+        if (submitBtn && creatorRole !== 'admin') submitBtn.disabled = true;
+        return;
+      }
+      rows.sort((a, b) => String(a.oaci || '').localeCompare(String(b.oaci || '')));
+      rows.forEach((station) => {
+        const oaci = String(station.oaci || '').trim().toUpperCase();
+        if (!oaci) return;
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center justify-content-between flex-wrap gap-2 border rounded-3 px-3 py-2';
+        row.setAttribute('data-station', oaci);
+        const title = document.createElement('div');
+        title.className = 'd-flex align-items-center gap-2';
+        const strong = document.createElement('strong');
+        strong.textContent = oaci;
+        title.appendChild(strong);
+        const metaParts = [];
+        if (station.nombre) metaParts.push(String(station.nombre));
+        if (station.region) metaParts.push(String(station.region));
+        if (metaParts.length) {
+          const meta = document.createElement('span');
+          meta.className = 'small text-secondary';
+          meta.textContent = metaParts.join(' · ');
+          title.appendChild(meta);
+        }
+        const toggles = document.createElement('div');
+        toggles.className = 'd-flex align-items-center gap-3 flex-wrap';
+
+        const createToggle = (kind, label, enabled) => {
+          const wrap = document.createElement('div');
+          wrap.className = 'form-check form-check-inline mb-0';
+          const id = `uc-${oaci}-${kind}`;
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.className = 'form-check-input';
+          input.name = `station_${kind}[${oaci}]`;
+          input.id = id;
+          input.value = '1';
+          input.dataset.role = kind === 'view' ? 'view-toggle' : 'edit-toggle';
+          if (!enabled) {
+            input.disabled = true;
+            input.dataset.disabled = '1';
+          }
+          const lab = document.createElement('label');
+          lab.className = 'form-check-label small';
+          lab.setAttribute('for', id);
+          lab.textContent = label;
+          wrap.appendChild(input);
+          wrap.appendChild(lab);
+          return wrap;
+        };
+
+        toggles.appendChild(createToggle('view', 'Ver', station.can_view !== false));
+        toggles.appendChild(createToggle('edit', 'Editar', station.can_edit === true));
+
+        row.appendChild(title);
+        row.appendChild(toggles);
+        stationList.appendChild(row);
+      });
+      setStationStatus('Marca Ver y/o Editar para las estaciones permitidas.', 'secondary');
+      if (submitBtn) submitBtn.disabled = false;
+    };
+
+    const ensureStations = async () => {
+      if (!stationList || stationsPromise) return stationsPromise;
+      setStationStatus('Cargando estaciones disponibles…', 'secondary');
+      stationsPromise = fetchJSON(`${API_BASE}user_station_options.php`)
+        .then((data) => {
+          renderStations(data && Array.isArray(data.stations) ? data.stations : []);
+          return data;
+        })
+        .catch((err) => {
+          setStationStatus(err && err.message ? err.message : 'No se pudieron cargar las estaciones disponibles.', 'danger');
+          if (submitBtn) submitBtn.disabled = true;
+          stationsPromise = null;
+          throw err;
+        });
+      return stationsPromise;
+    };
+
+    const resetForm = () => {
+      if (form) {
+        form.reset();
+        if (activeInput) activeInput.checked = true;
+        if (stationList) {
+          stationList.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            if (!input.disabled) input.checked = false;
+          });
+        }
+      }
+      if (msg) {
+        msg.textContent = '';
+        msg.className = 'small text-secondary mt-2';
+      }
+      if (submitBtn) submitBtn.disabled = false;
+      if (stationStatus) {
+        if (stationsPromise) {
+          const hasRows = stationList && stationList.querySelector('[data-station]');
+          setStationStatus(hasRows ? 'Marca Ver y/o Editar para las estaciones permitidas.' : 'No tienes estaciones asignadas. Solicita al administrador mapearlas antes de crear usuarios.', hasRows ? 'secondary' : 'warning');
+        } else {
+          setStationStatus('Cargando estaciones disponibles…', 'secondary');
+        }
+      }
+    };
+
+    modalEl.addEventListener('hidden.bs.modal', resetForm);
+    modalEl.addEventListener('show.bs.modal', () => {
+      if (!stationsPromise) {
+        ensureStations().catch(() => {});
+      } else if (stationStatus) {
+        const hasRows = stationList && stationList.querySelector('[data-station]');
+        setStationStatus(hasRows ? 'Marca Ver y/o Editar para las estaciones permitidas.' : 'No tienes estaciones asignadas. Solicita al administrador mapearlas antes de crear usuarios.', hasRows ? 'secondary' : 'warning');
+      }
+    });
+
+    if (stationList) {
+      stationList.addEventListener('change', (event) => {
+        const target = event.target;
+        if (!target || !target.matches('[data-role="edit-toggle"]')) return;
+        if (!target.checked) return;
+        const row = target.closest('[data-station]');
+        const viewToggle = row ? row.querySelector('[data-role="view-toggle"]') : null;
+        if (viewToggle && !viewToggle.checked && !viewToggle.disabled) {
+          viewToggle.checked = true;
+        }
+      });
+    }
+
+    if (!form) return;
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!submitBtn) return;
+      if (!stationsPromise) {
+        try { await ensureStations(); } catch (err) { return; }
+      }
+      if (creatorRole !== 'admin') {
+        const hasStation = form.querySelector('input[name^="station_view"][type="checkbox"]:checked');
+        if (!hasStation) {
+          if (msg) {
+            msg.textContent = 'Selecciona al menos una estación para el nuevo usuario.';
+            msg.className = 'small text-danger mt-2';
+          }
+          return;
+        }
+      }
+      submitBtn.disabled = true;
+      if (msg) {
+        msg.textContent = 'Guardando…';
+        msg.className = 'small text-secondary mt-2';
+      }
+      const fd = new FormData(form);
+      try {
+        await fetchJSON(`${API_BASE}users_create.php`, { method: 'POST', body: fd });
+        if (msg) {
+          msg.textContent = 'Usuario creado correctamente.';
+          msg.className = 'small text-success mt-2';
+        }
+        setTimeout(() => {
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+        }, 600);
+      } catch (err) {
+        if (msg) {
+          msg.textContent = err && err.message ? err.message : 'No se pudo crear el usuario.';
+          msg.className = 'small text-danger mt-2';
+        }
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+  }
+
   // ================================
   // Arranque
   // ================================
   onReady(() => {
+    initUserCreateModal();
     buildTable('lic'); // vista default
   });
 })();

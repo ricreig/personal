@@ -13,6 +13,7 @@ $JS = [
   asset_version('/public/assets/js/jquery-3.7.1.min.js'),
   asset_version('/public/assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js'),
   asset_version('/public/assets/js/datatables.min.js'),
+  asset_version('/public/assets/date-mask.js'),
   asset_version('/public/assets/app.js'), // tu inicializador
   asset_version('/public/assets/js/app_no_ficha.js'),
   asset_version('/public/assets/js/app_lic_button.js'),

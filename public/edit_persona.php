@@ -220,12 +220,12 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
         <input name="curp" class="form-control" value="<?=h($emp['curp'])?>">
       </div>
       <div>
-        <label class="form-label">Nacimiento (dd/mm/aaaa o yyyy-mm-dd)</label>
-        <input name="fecha_nacimiento" class="form-control" placeholder="dd/mm/aaaa" value="<?=h($emp['fecha_nacimiento'])?>">
+        <label class="form-label">Nacimiento (dd/mm/aaaa)</label>
+        <input name="fecha_nacimiento" class="form-control" placeholder="dd/mm/aaaa" value="<?=h($emp['fecha_nacimiento'])?>" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
       </div>
       <div>
         <label class="form-label">Ingreso/Antigüedad</label>
-        <input name="ant" class="form-control" placeholder="yyyy-mm-dd o dd/mm/aaaa" value="<?=h($emp['ant'])?>">
+        <input name="ant" class="form-control" placeholder="dd/mm/aaaa" value="<?=h($emp['ant'])?>" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
       </div>
       <div style="grid-column:1/-1">
         <label class="form-label">Dirección</label>
@@ -267,81 +267,91 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       </div>
 
       <!-- Licencias / exámenes -->
-      <div>
-        <label class="form-label">Tipo Licencia 1</label>
-        <select name="tipo1" class="form-select">
-          <option value="">—</option>
-          <?php foreach($LIC_OPC as $k=>$label): ?>
-            <option value="<?=h($k)?>" <?=$emp['tipo1']===$k?'selected':''?>><?=h($label)?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div>
-        <label class="form-label">No. Licencia 1</label>
-        <input name="licencia1" class="form-control" value="<?=h($emp['licencia1'])?>">
-      </div>
-      <div>
-        <label class="form-label">Vigencia 1</label>
-        <input name="vigencia1" class="form-control" value="<?=h($emp['vigencia1'])?>">
-      </div>
-
-      <div>
-        <label class="form-label">Tipo Licencia 2</label>
-        <select name="tipo2" class="form-select">
-          <option value="">—</option>
-          <?php foreach($LIC_OPC as $k=>$label): ?>
-            <option value="<?=h($k)?>" <?=$emp['tipo2']===$k?'selected':''?>><?=h($label)?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div>
-        <label class="form-label">No. Licencia 2</label>
-        <input name="licencia2" class="form-control" value="<?=h($emp['licencia2'])?>">
-      </div>
-      <div>
-        <label class="form-label">Vigencia 2</label>
-        <input name="vigencia2" class="form-control" value="<?=h($emp['vigencia2'])?>">
+      <div class="grid grid-3" style="grid-column:1/-1">
+        <div>
+          <label class="form-label">Tipo Licencia 1</label>
+          <select name="tipo1" class="form-select">
+            <option value="">—</option>
+            <?php foreach($LIC_OPC as $k=>$label): ?>
+              <option value="<?=h($k)?>" <?=$emp['tipo1']===$k?'selected':''?>><?=h($label)?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">No. Licencia 1</label>
+          <input name="licencia1" class="form-control" value="<?=h($emp['licencia1'])?>">
+        </div>
+        <div>
+          <label class="form-label">Vigencia 1</label>
+          <input name="vigencia1" class="form-control" value="<?=h($emp['vigencia1'])?>" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+        </div>
       </div>
 
-      <div>
-        <label class="form-label">LCAR / DL</label>
-        <select name="examen1" class="form-select">
-          <option value="">—</option>
-          <?php foreach($LCAR_OPC as $k=>$label): ?>
-            <option value="<?=h($k)?>" <?=$emp['examen1']===$k?'selected':''?>><?=h($label)?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div>
-        <label class="form-label">Vigencia LCAR/DL</label>
-        <input name="examen_vig1" class="form-control" value="<?=h($emp['examen_vig1'])?>">
-      </div>
-
-      <div>
-        <label class="form-label">Clase Examen Médico</label>
-        <select name="examen2" class="form-select">
-          <option value="">—</option>
-          <?php foreach($CLASE_OPC as $k=>$label): ?>
-            <option value="<?=h($k)?>" <?=$emp['examen2']===$k?'selected':''?>><?=h($label)?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div>
-        <label class="form-label">Vigencia Examen Médico</label>
-        <input name="examen_vig2" class="form-control" value="<?=h($emp['examen_vig2'])?>">
+      <div class="grid grid-3" style="grid-column:1/-1">
+        <div>
+          <label class="form-label">Tipo Licencia 2</label>
+          <select name="tipo2" class="form-select">
+            <option value="">—</option>
+            <?php foreach($LIC_OPC as $k=>$label): ?>
+              <option value="<?=h($k)?>" <?=$emp['tipo2']===$k?'selected':''?>><?=h($label)?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">No. Licencia 2</label>
+          <input name="licencia2" class="form-control" value="<?=h($emp['licencia2'])?>">
+        </div>
+        <div>
+          <label class="form-label">Vigencia 2</label>
+          <input name="vigencia2" class="form-control" value="<?=h($emp['vigencia2'])?>" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+        </div>
       </div>
 
-      <div>
-        <label class="form-label">RTARI</label>
-        <input name="rtari" class="form-control" value="<?=h($emp['rtari'])?>">
+      <div class="grid grid-3" style="grid-column:1/-1">
+        <div>
+          <label class="form-label">LCAR / DL</label>
+          <select name="examen1" class="form-select">
+            <option value="">—</option>
+            <?php foreach($LCAR_OPC as $k=>$label): ?>
+              <option value="<?=h($k)?>" <?=$emp['examen1']===$k?'selected':''?>><?=h($label)?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Vigencia LCAR/DL</label>
+          <input name="examen_vig1" class="form-control" value="<?=h($emp['examen_vig1'])?>" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+        </div>
+        <div>
+          <label class="form-label">RTARI</label>
+          <input name="rtari" class="form-control" value="<?=h($emp['rtari'])?>">
+        </div>
       </div>
-      <div>
-        <label class="form-label">Vigencia RTARI</label>
-        <input name="rtari_vig" class="form-control" value="<?=h($emp['rtari_vig'])?>">
+
+      <div class="grid grid-2" style="grid-column:1/-1">
+        <div>
+          <label class="form-label">Vigencia RTARI</label>
+          <input name="rtari_vig" class="form-control" value="<?=h($emp['rtari_vig'])?>" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+        </div>
       </div>
-      <div style="grid-column:1/-1">
-        <label class="form-label">Expediente Médico</label>
-        <input name="exp_med" class="form-control" value="<?=h($emp['exp_med'])?>">
+
+      <div class="grid grid-3" style="grid-column:1/-1">
+        <div>
+          <label class="form-label">Clase Examen Médico</label>
+          <select name="examen2" class="form-select">
+            <option value="">—</option>
+            <?php foreach($CLASE_OPC as $k=>$label): ?>
+              <option value="<?=h($k)?>" <?=$emp['examen2']===$k?'selected':''?>><?=h($label)?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Expediente Médico</label>
+          <input name="exp_med" class="form-control" value="<?=h($emp['exp_med'])?>">
+        </div>
+        <div>
+          <label class="form-label">Vigencia Examen Médico</label>
+          <input name="examen_vig2" class="form-control" value="<?=h($emp['examen_vig2'])?>" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+        </div>
       </div>
     </div>
 
