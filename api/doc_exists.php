@@ -1,86 +1,139 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/bootstrap.php';// Encabezados base para JSON y evitar cacheado por proxies
+
+require_once __DIR__ . '/bootstrap.php';
+
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 
-$ROOT = dirname(__DIR__); // …/unificado
+$ROOT = dirname(__DIR__);
 
 require_once $ROOT . '/lib/session.php';
-session_boot();                         // inicia sesión con cookie domain .ctareig.com
-
+session_boot();
 require_once $ROOT . '/lib/db.php';
 require_once $ROOT . '/lib/auth.php';
-// NO require guard.php aquí: las APIs usan require_auth_api()
 
-$u = auth_user();
-
-function oaci_from_estacion(?int $n): string {
-  return match($n) {
-    1 => 'MMSD', 2 => 'MMLP', 3 => 'MMSL', 4 => 'MMLT',
-    5 => 'MMTJ', 6 => 'MMML', 7 => 'MMPE', 8 => 'MMHO', 9 => 'MMGM',
-    default => ''
-  };
+$user = auth_user();
+if (!$user) {
+    http_response_code(401);
+    echo json_encode(['error' => 'unauthorized']);
+    exit;
 }
 
-try {
-    $pdo = db();
-  $u = auth_user();
-  $control = trim($_GET['control'] ?? '');
-  if ($control === '') throw new Exception('control requerido', 400);
-
-  // Traer estación del empleado sin depender de tabla "estaciones"
-  $st = $pdo->prepare("SELECT estacion FROM empleados WHERE control=? LIMIT 1");
-  $st->execute([$control]);
-  $row = $st->fetch();
-  if (!$row) throw new Exception('control no encontrado', 404);
-
-  $oaci = oaci_from_estacion((int)$row['estacion']);
-  // Validar permiso con tu misma matriz de estaciones (si eres admin, pasa)
-  if (!is_admin()) {
-    $matrix = user_station_matrix($pdo, (int)$u['id']); // devuelve ['MMTJ'=>true,...]
-    if (empty($matrix[$oaci])) throw new Exception('sin permiso', 403);
-  }
-
-  // documentos_personal puede no existir aún -> devolver todo falso en ese caso
-  $has = [
-    'lic1'=>['unified'=>false,'front'=>false,'back'=>false],
-    'lic2'=>['unified'=>false,'front'=>false,'back'=>false],
-    'med'=>false, 'rtari'=>false, 'cert'=>false,
-    'doc_lic1'=>false, 'doc_lic2'=>false,
-    'extras'=>0
-  ];
-
-  // Verificar existencia de la tabla
-  $tbl = $pdo->query("SHOW TABLES LIKE 'documentos_personal'")->fetchColumn();
-  if (!$tbl) { echo json_encode($has, JSON_UNESCAPED_UNICODE); exit; }
-
-  $q = $pdo->prepare("SELECT tipo FROM documentos_personal WHERE control=?");
-  $q->execute([$control]);
-
-  while ($t = $q->fetchColumn()) {
-    if ($t==='licencia1') $has['lic1']['unified']=true;
-    if ($t==='licencia1_front') $has['lic1']['front']=true;
-    if ($t==='licencia1_back')  $has['lic1']['back']=true;
-
-    if ($t==='licencia2') $has['lic2']['unified']=true;
-    if ($t==='licencia2_front') $has['lic2']['front']=true;
-    if ($t==='licencia2_back')  $has['lic2']['back']=true;
-
-    if ($t==='examen_medico') $has['med']=true;
-    if ($t==='rtari')         $has['rtari']=true;
-    if ($t==='certificado')   $has['cert']=true;
-
-    if ($t==='doc_licencia1') $has['doc_lic1']=true;
-    if ($t==='doc_licencia2') $has['doc_lic2']=true;
-
-    if (strpos($t, 'doc_extra')===0) $has['extras']++;
-  }
-
-  echo json_encode($has, JSON_UNESCAPED_UNICODE);
-} catch (Throwable $e) {
-  $code = ($e->getCode()>=300 && $e->getCode()<600) ? (int)$e->getCode() : 500;
-  http_response_code($code);
-  echo json_encode(['error'=>$e->getMessage()]);
+$control = trim((string)($_GET['control'] ?? ''));
+if ($control === '') {
+    http_response_code(400);
+    echo json_encode(['error' => 'control requerido']);
+    exit;
 }
+
+$pdo = db();
+
+$emp = $pdo->prepare('SELECT estacion FROM empleados WHERE control = ? LIMIT 1');
+$emp->execute([$control]);
+$empRow = $emp->fetch(PDO::FETCH_ASSOC);
+if (!$empRow) {
+    http_response_code(404);
+    echo json_encode(['error' => 'not_found']);
+    exit;
+}
+
+$station = (string)($empRow['estacion'] ?? '');
+
+$canOaci = static function (PDO $pdo, array $auth, string $stationCode): bool {
+    if (function_exists('is_admin') && is_admin()) {
+        return true;
+    }
+    if ($stationCode === '') {
+        return false;
+    }
+    if (function_exists('user_station_matrix')) {
+        $matrix = user_station_matrix($pdo, (int)($auth['id'] ?? 0));
+        return empty($matrix) || !empty($matrix[$stationCode]);
+    }
+    return false;
+};
+
+if (!$canOaci($pdo, $user, $station)) {
+    http_response_code(403);
+    echo json_encode(['error' => 'forbidden']);
+    exit;
+}
+
+$data = [
+    'licencia1' => ['exists' => false],
+    'licencia2' => ['exists' => false],
+    'examen_medico' => ['exists' => false],
+    'rtari' => ['exists' => false],
+    'nombramientos' => ['exists' => false],
+    'misc' => ['exists' => false, 'count' => 0, 'items' => []],
+];
+
+$tableExists = $pdo->query("SHOW TABLES LIKE 'documentos_personal'")->fetchColumn();
+if (!$tableExists) {
+    echo json_encode(['ok' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$docs = $pdo->prepare(
+    'SELECT tipo, file_path, mime, size_bytes, updated_at
+     FROM documentos_personal
+     WHERE control = ?
+     ORDER BY updated_at DESC'
+);
+$docs->execute([$control]);
+
+$mapKey = static function (string $tipo): string {
+    $t = strtolower(trim($tipo));
+    if (str_starts_with($t, 'doc_extra')) {
+        return 'misc';
+    }
+    if (in_array($t, ['licencia1', 'licencia1_front', 'licencia1_back', 'doc_licencia1'], true)) {
+        return 'licencia1';
+    }
+    if (in_array($t, ['licencia2', 'licencia2_front', 'licencia2_back', 'doc_licencia2'], true)) {
+        return 'licencia2';
+    }
+    if (in_array($t, ['examen_medico', 'cert_medico'], true)) {
+        return 'examen_medico';
+    }
+    if ($t === 'rtari') {
+        return 'rtari';
+    }
+    if (in_array($t, ['nombramiento', 'nombramientos', 'certificado'], true)) {
+        return 'nombramientos';
+    }
+    return 'misc';
+};
+
+while ($row = $docs->fetch(PDO::FETCH_ASSOC)) {
+    $tipo = (string)($row['tipo'] ?? '');
+    if ($tipo === '') {
+        continue;
+    }
+    $key = $mapKey($tipo);
+    $item = [
+        'exists' => true,
+        'tipo' => $tipo,
+        'filename' => basename((string)($row['file_path'] ?? '')),
+        'mime' => (string)($row['mime'] ?? ''),
+        'size' => (int)($row['size_bytes'] ?? 0),
+        'updated_at' => $row['updated_at'] ?? null,
+        'url' => 'doc_view.php?control=' . rawurlencode($control) . '&tipo=' . rawurlencode($tipo),
+      ];
+
+    if ($key === 'misc') {
+        $data['misc']['items'][] = $item;
+        $data['misc']['count'] = count($data['misc']['items']);
+        $data['misc']['exists'] = $data['misc']['count'] > 0;
+        continue;
+    }
+
+    $current = $data[$key] ?? null;
+    if (!$current['exists'] || $tipo === $key) {
+        $data[$key] = $item;
+    }
+}
+
+echo json_encode(['ok' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);

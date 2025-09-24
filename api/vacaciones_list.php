@@ -54,7 +54,7 @@ if ($mode === 'persona') {
         exit;
     }
     $mov = $pdo->prepare(
-        'SELECT year, tipo, periodo, inicia, reanuda, dias, resta, obs
+        'SELECT id, year, tipo, periodo, inicia, reanuda, dias, resta, obs
          FROM vacaciones
          WHERE control = ?
          ORDER BY year DESC, tipo ASC, periodo ASC, id DESC'
@@ -63,6 +63,7 @@ if ($mode === 'persona') {
     $movRows = [];
     $years = [];
     while ($row = $mov->fetch(PDO::FETCH_ASSOC)) {
+        $row['id'] = (int)($row['id'] ?? 0);
         $row['year'] = (int)$row['year'];
         $row['dias'] = (int)($row['dias'] ?? 0);
         $row['resta'] = isset($row['resta']) ? (int)$row['resta'] : null;

@@ -11,11 +11,20 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     year: new Date().getFullYear(),
   };
 
+  const VAC_TYPE_LABELS = {
+    VAC: 'Vacaciones',
+    PR: 'Recuperación (PR)',
+    ANT: 'Antigüedad',
+  };
+
   const el = {
     error: document.getElementById('prestError'),
     modeBtns: Array.from(document.querySelectorAll('#modeSwitch [data-mode]')),
     personaWrap: document.getElementById('personaSelectWrap'),
     personaSelect: document.getElementById('personaSelect'),
+    personaSearch: document.getElementById('personaSearch'),
+    personaOptions: document.getElementById('personaOptions'),
+    personaClear: document.querySelector('#personaSelectWrap .persona-clear'),
     personaYearWrap: document.getElementById('anioPersonaWrap'),
     personaYearSelect: document.getElementById('anioPersonaSelect'),
     yearWrap: document.getElementById('anioSelectWrap'),
@@ -53,6 +62,13 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
 
   const editState = {
     detail: null,
+    vac: {
+      detail: null,
+      records: [],
+      activeTab: 'form',
+      selectedId: null,
+      elements: null,
+    },
   };
 
   function formatControl(value) {
@@ -82,43 +98,129 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     return active.length ? active : state.init.stations.slice();
   }
 
-function toggleModeElements() {
-  const personaMode = state.mode === 'persona';
-
-  if (el.personaWrap) {
-    el.personaWrap.classList.toggle('d-none', !personaMode);
-  }
-  if (el.personaSelect) {
-    el.personaSelect.toggleAttribute('disabled', !personaMode);
+  function personaLabel(persona) {
+    if (!persona) return '';
+    const control = formatControl(persona.control);
+    const oaci = String(persona.oaci || '').trim().toUpperCase();
+    const name = persona.nombres || '';
+    return `${oaci ? `${oaci} · ` : ''}${control}${name ? ` · ${name}` : ''}`;
   }
 
-  if (el.personaYearWrap) {
-    el.personaYearWrap.classList.add('d-none');
+  function findPersona(control) {
+    if (!state.init || !Array.isArray(state.init.personas)) return null;
+    const ctrl = String(control || '');
+    return state.init.personas.find((p) => String(p.control) === ctrl) || null;
   }
-  if (el.personaYearSelect) {
-    el.personaYearSelect.setAttribute('disabled', 'disabled');
+
+  function updatePersonaSearchInput(control) {
+    if (!el.personaSearch) return;
+    const wrap = el.personaWrap ? el.personaWrap.querySelector('.persona-search-input') : null;
+    const persona = findPersona(control);
+    if (persona) {
+      el.personaSearch.value = personaLabel(persona);
+      if (wrap) wrap.classList.add('has-value');
+    } else {
+      el.personaSearch.value = '';
+      if (wrap) wrap.classList.remove('has-value');
+    }
   }
 
-  if (el.yearWrap) el.yearWrap.classList.toggle('d-none', personaMode);
-  if (el.yearpersonaWrap) el.yearpersonaWrap.classList.add('d-none');
-  if (el.yearpersonaSelect) el.yearpersonaSelect.setAttribute('disabled', 'disabled');
+  function setPersonaControl(control, opts = {}) {
+    const { updateSearch = true, silent = false } = opts;
+    const normalized = control ? String(control) : '';
+    const prev = state.personaControl;
+    state.personaControl = normalized;
+    if (el.personaSelect) {
+      el.personaSelect.value = normalized;
+    }
+    if (updateSearch) {
+      updatePersonaSearchInput(normalized);
+    }
+    if (!silent && normalized !== prev) {
+      refreshActive();
+    }
+  }
 
-  if (el.pecosPersona) el.pecosPersona.classList.toggle('d-none', !personaMode);
-  if (el.pecosYear) el.pecosYear.classList.toggle('d-none', personaMode);
-  if (el.txtPersona) el.txtPersona.classList.toggle('d-none', !personaMode);
-  if (el.txtYear) el.txtYear.classList.toggle('d-none', personaMode);
-  if (el.vacPersona) el.vacPersona.classList.toggle('d-none', !personaMode);
-  if (el.vacYear) el.vacYear.classList.toggle('d-none', personaMode);
-  if (el.vacSummaryWrap) el.vacSummaryWrap.classList.toggle('d-none', !personaMode);
-  if (el.incPersona) el.incPersona.classList.toggle('d-none', !personaMode);
-  if (el.incYear) el.incYear.classList.toggle('d-none', personaMode);
+  function resolvePersonaControlFromInput(rawValue) {
+    const value = String(rawValue || '').trim();
+    if (!value) return '';
+    if (el.personaOptions) {
+      const options = Array.from(el.personaOptions.options || []);
+      const direct = options.find((opt) => opt.value === value);
+      if (direct) {
+        return String(direct.dataset.control || direct.value || '');
+      }
+    }
+    const normalized = value.replace(/\s+/g, '').toUpperCase();
+    const personas = (state.init && Array.isArray(state.init.personas)) ? state.init.personas : [];
+    const match = personas.find((persona) => {
+      const label = personaLabel(persona).replace(/\s+/g, '').toUpperCase();
+      const ctrl = formatControl(persona.control);
+      return label === normalized || ctrl === normalized || String(persona.control) === value;
+    });
+    return match ? String(match.control) : '';
+  }
 
-  el.modeBtns.forEach((btn) => {
-    const mode = btn.getAttribute('data-mode');
-    btn.classList.toggle('btn-primary', mode === state.mode);
-    btn.classList.toggle('btn-outline-secondary', mode !== state.mode);
-  });
-}
+  function refreshPersonaOptions({ preserveSelection = true } = {}) {
+    if (!el.personaOptions) return;
+    const stations = selectedStations().map((s) => String(s || '').trim().toUpperCase());
+    const personas = (state.init && Array.isArray(state.init.personas)) ? state.init.personas : [];
+    const filtered = stations.length
+      ? personas.filter((p) => stations.includes(String(p.oaci || '').trim().toUpperCase()))
+      : personas;
+    el.personaOptions.innerHTML = filtered
+      .map((p) => `<option value="${personaLabel(p)}" data-control="${p.control}"></option>`)
+      .join('');
+    if (!preserveSelection || !filtered.some((p) => String(p.control) === state.personaControl)) {
+      setPersonaControl('', { updateSearch: true, silent: true });
+    } else if (state.personaControl) {
+      updatePersonaSearchInput(state.personaControl);
+    }
+  }
+
+  function toggleModeElements() {
+    const personaMode = state.mode === 'persona';
+
+    if (el.personaWrap) {
+      el.personaWrap.classList.toggle('d-none', !personaMode);
+    }
+    if (el.personaSelect) {
+      el.personaSelect.toggleAttribute('disabled', !personaMode);
+    }
+    if (el.personaSearch) {
+      el.personaSearch.toggleAttribute('disabled', !personaMode);
+    }
+    if (el.personaClear) {
+      el.personaClear.toggleAttribute('disabled', !personaMode);
+    }
+
+    if (el.personaYearWrap) {
+      el.personaYearWrap.classList.add('d-none');
+    }
+    if (el.personaYearSelect) {
+      el.personaYearSelect.setAttribute('disabled', 'disabled');
+    }
+
+    if (el.yearWrap) el.yearWrap.classList.toggle('d-none', personaMode);
+    if (el.yearpersonaWrap) el.yearpersonaWrap.classList.add('d-none');
+    if (el.yearpersonaSelect) el.yearpersonaSelect.setAttribute('disabled', 'disabled');
+
+    if (el.pecosPersona) el.pecosPersona.classList.toggle('d-none', !personaMode);
+    if (el.pecosYear) el.pecosYear.classList.toggle('d-none', personaMode);
+    if (el.txtPersona) el.txtPersona.classList.toggle('d-none', !personaMode);
+    if (el.txtYear) el.txtYear.classList.toggle('d-none', personaMode);
+    if (el.vacPersona) el.vacPersona.classList.toggle('d-none', !personaMode);
+    if (el.vacYear) el.vacYear.classList.toggle('d-none', personaMode);
+    if (el.vacSummaryWrap) el.vacSummaryWrap.classList.toggle('d-none', !personaMode);
+    if (el.incPersona) el.incPersona.classList.toggle('d-none', !personaMode);
+    if (el.incYear) el.incYear.classList.toggle('d-none', personaMode);
+
+    el.modeBtns.forEach((btn) => {
+      const mode = btn.getAttribute('data-mode');
+      btn.classList.toggle('btn-primary', mode === state.mode);
+      btn.classList.toggle('btn-outline-secondary', mode !== state.mode);
+    });
+  }
 
 
   function setMode(mode) {
@@ -302,6 +404,17 @@ function toggleModeElements() {
     const yearValue = row.year ?? '';
     const yearAttr = yearValue !== '' ? ` data-prest-year="${yearValue}"` : '';
     const flags = renderFlags(row.flags);
+    if (type === 'vac') {
+      return `
+        <div class="d-inline-flex align-items-center gap-2 flex-wrap">
+          ${flags ? `<span class="text-nowrap">${flags}</span>` : ''}
+          <div class="vac-action-pill">
+            <button type="button" class="btn btn-add" data-prest-action="add" ${attrs}${yearAttr}>Agregar</button>
+            <button type="button" class="btn btn-edit" data-prest-action="edit" ${attrs}${yearAttr}>Editar</button>
+          </div>
+        </div>
+      `;
+    }
     return `
       <div class="d-inline-flex align-items-center gap-2 flex-wrap">
         ${flags ? `<span class="text-nowrap">${flags}</span>` : ''}
@@ -419,12 +532,20 @@ function toggleModeElements() {
 
   function resetEditForm() {
     if (el.editForm) {
+      el.editForm.className = 'row g-3';
       el.editForm.innerHTML = '';
     }
     setModalMessage('');
     if (el.editSaveBtn) {
       el.editSaveBtn.disabled = true;
     }
+    editState.vac = {
+      detail: null,
+      records: [],
+      activeTab: 'form',
+      selectedId: null,
+      elements: null,
+    };
   }
 
   function createInputField(field) {
@@ -489,20 +610,27 @@ function toggleModeElements() {
     return wrap;
   }
 
-  function populateEditForm(fields) {
+  function populateEditForm(fields, target) {
     if (!el.editForm) return;
-    el.editForm.innerHTML = '';
+    const container = target || el.editForm;
+    if (!target) {
+      el.editForm.innerHTML = '';
+    } else {
+      container.innerHTML = '';
+    }
     fields.forEach((field) => {
       const node = createInputField(field);
       if (!node) return;
       if (node.tagName === 'INPUT' && node.type === 'hidden') {
+        const existing = Array.from(el.editForm.querySelectorAll(`input[type="hidden"][name="${field.name}"]`));
+        existing.forEach((inp) => inp.remove());
         el.editForm.appendChild(node);
       } else {
-        el.editForm.appendChild(node);
+        container.appendChild(node);
       }
     });
     if (typeof window.applyDateMask === 'function') {
-      window.applyDateMask(el.editForm);
+      window.applyDateMask(container);
     }
   }
 
@@ -617,32 +745,296 @@ function toggleModeElements() {
     }
   }
 
-  function openVacEdit(detail) {
+  function buildVacModalSkeleton(detail) {
+    if (!el.editForm) return;
+    el.editForm.className = 'd-flex flex-column gap-3';
+    el.editForm.innerHTML = `
+      <div>
+        <ul class="nav nav-pills gap-2" id="vacEditTabs" role="tablist">
+          <li class="nav-item" role="presentation"><button class="nav-link" data-vac-tab="form" type="button">Registrar</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" data-vac-tab="records" type="button">Movimientos guardados</button></li>
+        </ul>
+      </div>
+      <div class="tab-content" id="vacEditContent">
+        <div class="tab-pane" id="vacEditPaneForm" role="tabpanel">
+          <div class="row g-3" id="vacFormFields"></div>
+        </div>
+        <div class="tab-pane" id="vacEditPaneRecords" role="tabpanel"></div>
+      </div>
+    `;
+    const tabs = {
+      form: el.editForm.querySelector('[data-vac-tab="form"]'),
+      records: el.editForm.querySelector('[data-vac-tab="records"]'),
+    };
+    const panes = {
+      form: el.editForm.querySelector('#vacEditPaneForm'),
+      records: el.editForm.querySelector('#vacEditPaneRecords'),
+    };
+    editState.vac.elements = {
+      tabButtons: tabs,
+      panes,
+      fieldsContainer: el.editForm.querySelector('#vacFormFields'),
+    };
+    if (tabs.form) tabs.form.addEventListener('click', () => switchVacTab('form'));
+    if (tabs.records) tabs.records.addEventListener('click', () => switchVacTab('records'));
+  }
+
+  function buildVacForm(detail, defaults = {}) {
+    if (!editState.vac.elements || !editState.vac.elements.fieldsContainer) return;
     const now = new Date();
-    const defaultYear = detail.year ? parseInt(detail.year, 10) : now.getFullYear();
-    setModalTitle('Registrar movimiento de vacaciones');
-    ensureModal()?.show();
+    const control = detail.control || state.personaControl || '';
+    const defaultYear = defaults.year ?? detail.year ?? state.personaYear ?? now.getFullYear();
     const fields = [
-      { type: 'hidden', name: 'id', value: detail.id || '' },
-      { type: 'hidden', name: 'control', value: detail.control || '' },
+      { type: 'hidden', name: 'id', value: defaults.id || '' },
+      { type: 'hidden', name: 'control', value: control },
       { name: 'year', label: 'Año', type: 'number', value: defaultYear, col: 'col-6 col-md-4', attrs: { min: '2010', max: String(now.getFullYear() + 1) } },
-      { name: 'tipo', label: 'Tipo', type: 'select', value: 'VAC', col: 'col-6 col-md-4', options: [
-        { value: 'VAC', label: 'Vacaciones' },
-        { value: 'PR', label: 'Recuperación (PR)' },
-        { value: 'ANT', label: 'Antigüedad' },
+      { name: 'tipo', label: 'Tipo', type: 'select', value: (defaults.tipo || 'VAC').toUpperCase(), col: 'col-6 col-md-4', options: [
+        { value: 'VAC', label: VAC_TYPE_LABELS.VAC },
+        { value: 'PR', label: VAC_TYPE_LABELS.PR },
+        { value: 'ANT', label: VAC_TYPE_LABELS.ANT },
       ] },
-      { name: 'periodo', label: 'Periodo', type: 'number', value: '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
-      { name: 'inicia', label: 'Inicia', type: 'text', value: toDateMask(detail?.inicia || ''), col: 'col-6 col-md-4', attrs: { placeholder: 'dd/mm/aaaa', 'data-mask': 'date', inputmode: 'numeric', maxlength: '10' } },
-      { name: 'reanuda', label: 'Reanuda', type: 'text', value: toDateMask(detail?.reanuda || ''), col: 'col-6 col-md-4', attrs: { placeholder: 'dd/mm/aaaa', 'data-mask': 'date', inputmode: 'numeric', maxlength: '10' } },
-      { name: 'dias', label: 'Días usados', type: 'number', value: '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
-      { name: 'resta', label: 'Días restantes', type: 'number', value: '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
-      { name: 'obs', label: 'Observaciones', type: 'textarea', value: '', col: 'col-12', attrs: { maxlength: '50', rows: 2 } },
+      { name: 'periodo', label: 'Periodo', type: 'number', value: defaults.periodo ?? '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+      { name: 'inicia', label: 'Inicia', type: 'text', value: toDateMask(defaults.inicia || ''), col: 'col-6 col-md-4', attrs: { placeholder: 'dd/mm/aaaa', 'data-mask': 'date', inputmode: 'numeric', maxlength: '10' } },
+      { name: 'reanuda', label: 'Reanuda', type: 'text', value: toDateMask(defaults.reanuda || ''), col: 'col-6 col-md-4', attrs: { placeholder: 'dd/mm/aaaa', 'data-mask': 'date', inputmode: 'numeric', maxlength: '10' } },
+      { name: 'dias', label: 'Días usados', type: 'number', value: defaults.dias ?? '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+      { name: 'resta', label: 'Días restantes', type: 'number', value: defaults.resta ?? '', col: 'col-6 col-md-4', attrs: { min: '0', step: '1', inputmode: 'numeric' } },
+      { name: 'obs', label: 'Observaciones', type: 'textarea', value: defaults.obs ?? '', col: 'col-12', attrs: { maxlength: '120', rows: 2 } },
     ];
-    populateEditForm(fields);
-    const persona = getPersonaName(detail.control);
-    const ctrl = detail.control ? formatControl(detail.control) : '';
-    setModalMessage(persona ? `Control ${ctrl} · ${persona}. Complete los datos del movimiento que desea registrar.` : 'Complete los datos del movimiento que desea registrar.', 'info');
-    if (el.editSaveBtn) el.editSaveBtn.disabled = false;
+    populateEditForm(fields, editState.vac.elements.fieldsContainer);
+  }
+
+  function setVacFormValues(values) {
+    if (!el.editForm) return;
+    Object.entries(values || {}).forEach(([name, val]) => {
+      const input = el.editForm.querySelector(`[name="${name}"]`);
+      if (!input) return;
+      input.value = val ?? '';
+    });
+    if (typeof window.applyDateMask === 'function') {
+      window.applyDateMask(el.editForm);
+    }
+  }
+
+  function renderVacRecords() {
+    const pane = editState.vac.elements?.panes?.records;
+    if (!pane) return;
+    const records = Array.isArray(editState.vac.records) ? editState.vac.records : [];
+    if (!records.length) {
+      pane.innerHTML = '<div class="vac-records-empty">Sin movimientos guardados para este año.</div>';
+      return;
+    }
+    const rows = records.map((record) => {
+      const tipo = String(record.tipo || '').toUpperCase();
+      const label = VAC_TYPE_LABELS[tipo] || tipo || '—';
+      return `
+        <tr>
+          <td>${label}</td>
+          <td class="text-center">${record.periodo ?? ''}</td>
+          <td>${toDateMask(record.inicia) || ''}</td>
+          <td>${toDateMask(record.reanuda) || ''}</td>
+          <td class="text-center">${record.dias ?? 0}</td>
+          <td class="text-center">${record.resta ?? 0}</td>
+          <td>${record.obs || ''}</td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-outline-primary" data-vac-edit="${record.id || ''}">Editar</button>
+              <button type="button" class="btn btn-outline-danger" data-vac-delete="${record.id || ''}">Eliminar</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+    pane.innerHTML = `
+      <div class="table-responsive">
+        <table class="vac-records-table">
+          <thead>
+            <tr><th>Tipo</th><th>Periodo</th><th>Inicia</th><th>Reanuda</th><th>Días</th><th>Restan</th><th>Observaciones</th><th class="text-end">Acciones</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+    pane.querySelectorAll('[data-vac-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-vac-edit');
+        const record = records.find((r) => String(r.id) === String(id));
+        if (record) {
+          setVacFormMode('edit', record);
+          switchVacTab('form');
+        }
+      });
+    });
+    pane.querySelectorAll('[data-vac-delete]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-vac-delete');
+        const record = records.find((r) => String(r.id) === String(id));
+        if (record) {
+          confirmVacDelete(record);
+        }
+      });
+    });
+  }
+
+  function switchVacTab(tab) {
+    if (!editState.vac.elements) return;
+    const { tabButtons, panes } = editState.vac.elements;
+    ['form', 'records'].forEach((key) => {
+      if (tabButtons && tabButtons[key]) {
+        tabButtons[key].classList.toggle('active', key === tab);
+      }
+      if (panes && panes[key]) {
+        panes[key].classList.toggle('show', key === tab);
+        panes[key].classList.toggle('active', key === tab);
+      }
+    });
+    editState.vac.activeTab = tab;
+    if (el.editSaveBtn) {
+      el.editSaveBtn.disabled = tab !== 'form';
+    }
+  }
+
+  function setVacFormMode(mode, record) {
+    const detail = editState.vac.detail || {};
+    const baseControl = detail.control || state.personaControl || '';
+    const baseYear = detail.year || state.personaYear || new Date().getFullYear();
+    if (mode === 'edit' && record) {
+      const values = {
+        id: record.id || '',
+        control: baseControl,
+        year: record.year || baseYear,
+        tipo: (record.tipo || 'VAC').toUpperCase(),
+        periodo: record.periodo ?? '',
+        inicia: toDateMask(record.inicia || ''),
+        reanuda: toDateMask(record.reanuda || ''),
+        dias: record.dias ?? '',
+        resta: record.resta ?? '',
+        obs: record.obs ?? '',
+      };
+      setVacFormValues(values);
+      const tipoLabel = VAC_TYPE_LABELS[(record.tipo || '').toUpperCase()] || record.tipo || 'Movimiento';
+      setModalMessage(`Editando ${tipoLabel}${record.periodo ? ` · Periodo ${record.periodo}` : ''}`, 'info');
+      editState.vac.selectedId = record.id || '';
+    } else {
+      const values = {
+        id: '',
+        control: baseControl,
+        year: baseYear,
+        tipo: 'VAC',
+        periodo: '',
+        inicia: '',
+        reanuda: '',
+        dias: '',
+        resta: '',
+        obs: '',
+      };
+      setVacFormValues(values);
+      const persona = getPersonaName(baseControl);
+      const ctrlFmt = baseControl ? formatControl(baseControl) : '';
+      setModalMessage(persona ? `Control ${ctrlFmt} · ${persona}` : 'Complete los datos del movimiento que desea registrar.', 'info');
+      editState.vac.selectedId = null;
+    }
+  }
+
+  async function loadVacRecords(detail) {
+    if (!detail || !detail.control) return [];
+    const params = {
+      mode: 'persona',
+      control: detail.control,
+      year: detail.year || state.personaYear,
+    };
+    const data = await apiFetch('vacaciones_list.php', params);
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    const targetYear = Number(detail.year || state.personaYear || new Date().getFullYear());
+    return rows
+      .filter((row) => Number(row.year) === targetYear)
+      .map((row) => ({
+        ...row,
+        id: row.id ?? row.ID ?? row.Id ?? null,
+      }))
+      .sort((a, b) => {
+        const pa = Number(a.periodo) || 0;
+        const pb = Number(b.periodo) || 0;
+        if (pa !== pb) return pa - pb;
+        return String(a.tipo || '').localeCompare(String(b.tipo || ''));
+      });
+  }
+
+  async function deleteVacRecord(id) {
+    const formData = new FormData();
+    formData.append('id', id);
+    const resp = await fetch(API_BASE + 'vacaciones_delete.php', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data && data.ok !== true) throw new Error(data.error || 'No se pudo eliminar');
+  }
+
+  async function confirmVacDelete(record) {
+    if (!record || !record.id) return;
+    if (!window.confirm('¿Eliminar el movimiento seleccionado?')) return;
+    try {
+      await deleteVacRecord(record.id);
+      editState.vac.records = editState.vac.records.filter((r) => String(r.id) !== String(record.id));
+      renderVacRecords();
+      if (!editState.vac.records.length) {
+        switchVacTab('form');
+      }
+      refreshActive();
+      setModalMessage('Movimiento eliminado correctamente.', 'success');
+    } catch (err) {
+      console.error(err);
+      setModalMessage(err.message || 'No se pudo eliminar el movimiento.', 'error');
+    }
+  }
+
+  async function openVacEdit(detail) {
+    const control = detail.control || state.personaControl;
+    if (!control) {
+      setModalMessage('Seleccione un trabajador para gestionar vacaciones.', 'error');
+      ensureModal()?.show();
+      return;
+    }
+    const now = new Date();
+    const defaultYear = detail.year ? parseInt(detail.year, 10) : state.personaYear || now.getFullYear();
+    editState.vac = {
+      detail: { ...detail, control, year: defaultYear },
+      records: [],
+      activeTab: detail.action === 'edit' ? 'records' : 'form',
+      selectedId: null,
+      elements: null,
+    };
+    setModalTitle('Vacaciones — movimientos');
+    ensureModal()?.show();
+    setModalMessage('Cargando movimientos…', 'info');
+    if (el.editSaveBtn) el.editSaveBtn.disabled = true;
+    buildVacModalSkeleton(editState.vac.detail);
+    buildVacForm(editState.vac.detail, { year: defaultYear });
+    setVacFormMode('add');
+    switchVacTab(editState.vac.activeTab);
+    const personaName = getPersonaName(control);
+    try {
+      const records = await loadVacRecords(editState.vac.detail);
+      editState.vac.records = records;
+      renderVacRecords();
+      if (detail.action === 'edit' && records.length) {
+        switchVacTab('records');
+      } else {
+        switchVacTab('form');
+      }
+      const ctrlFmt = formatControl(control);
+      const msg = personaName ? `Control ${ctrlFmt} · ${personaName}` : `Control ${ctrlFmt}`;
+      setModalMessage(msg, 'info');
+      if (el.editSaveBtn && editState.vac.activeTab === 'form') {
+        el.editSaveBtn.disabled = false;
+      }
+    } catch (err) {
+      console.error(err);
+      renderVacRecords();
+      setModalMessage(err.message || 'No se pudo cargar la información de vacaciones.', 'error');
+      if (el.editSaveBtn) el.editSaveBtn.disabled = true;
+    }
   }
 
   function extractIncRow(detail) {
@@ -773,7 +1165,19 @@ function toggleModeElements() {
     if (!editState.detail) return;
     if (!el.editSaveBtn) return;
     const detail = editState.detail;
+    if (detail.type === 'vac' && editState.vac && editState.vac.activeTab !== 'form') {
+      setModalMessage('Utilice la pestaña “Registrar” para capturar o modificar un movimiento.', 'info');
+      return;
+    }
     const formData = formDataFromEdit();
+    if (detail.type === 'vac' && editState.vac) {
+      if (editState.vac.selectedId) {
+        formData.set('id', editState.vac.selectedId);
+      }
+      if (!formData.get('control')) {
+        formData.set('control', detail.control || state.personaControl || '');
+      }
+    }
     if (detail.type === 'inc' || detail.type === 'vac') {
       const fields = detail.type === 'inc' ? ['inicia', 'termina'] : ['inicia', 'reanuda'];
       fields.forEach((field) => {
@@ -880,7 +1284,7 @@ function toggleModeElements() {
 
   function handlePrestAction(event) {
     const detail = event.detail || {};
-    if (detail.action === 'edit') {
+    if (detail.action === 'edit' || detail.action === 'add') {
       handleEdit(detail);
     } else if (detail.action === 'delete') {
       handleDelete(detail);
@@ -1007,8 +1411,27 @@ function toggleModeElements() {
 
   function handlePersonaChange() {
     if (!el.personaSelect) return;
-    state.personaControl = el.personaSelect.value || '';
-    refreshActive();
+    setPersonaControl(el.personaSelect.value || '', { updateSearch: true, silent: false });
+  }
+
+  function handlePersonaSearchInput() {
+    if (!el.personaSearch) return;
+    const wrap = el.personaWrap ? el.personaWrap.querySelector('.persona-search-input') : null;
+    if (wrap) {
+      wrap.classList.toggle('has-value', el.personaSearch.value.trim().length > 0);
+    }
+  }
+
+  function handlePersonaSearchChange() {
+    if (!el.personaSearch) return;
+    const control = resolvePersonaControlFromInput(el.personaSearch.value);
+    setPersonaControl(control, { updateSearch: true, silent: false });
+  }
+
+  function handlePersonaClear() {
+    if (!el.personaSearch) return;
+    el.personaSearch.value = '';
+    setPersonaControl('', { updateSearch: true, silent: false });
   }
 
   function handlePersonaYearChange() {
@@ -1028,6 +1451,13 @@ function toggleModeElements() {
       btn.addEventListener('click', () => setMode(btn.getAttribute('data-mode')));
     });
     if (el.personaSelect) el.personaSelect.addEventListener('change', handlePersonaChange);
+    if (el.personaSearch) {
+      el.personaSearch.addEventListener('input', handlePersonaSearchInput);
+      el.personaSearch.addEventListener('change', handlePersonaSearchChange);
+    }
+    if (el.personaClear) {
+      el.personaClear.addEventListener('click', handlePersonaClear);
+    }
     if (el.personaYearSelect) el.personaYearSelect.addEventListener('change', handlePersonaYearChange);
     if (el.yearSelect) el.yearSelect.addEventListener('change', handleYearChange);
     if (el.oaciAll) {
@@ -1036,6 +1466,7 @@ function toggleModeElements() {
         document.querySelectorAll('.oaci-switch').forEach((sw) => {
           sw.checked = on;
         });
+        refreshPersonaOptions();
         refreshActive();
       });
     }
@@ -1061,11 +1492,9 @@ function toggleModeElements() {
     state.init = data;
     state.personaYear = Array.isArray(data.years) && data.years.length ? data.years[0] : state.personaYear;
     state.year = state.personaYear;
-    if (el.personaSelect) {
-      el.personaSelect.innerHTML = '<option value="">Seleccione…</option>' +
-        (data.personas || [])
-          .map((p) => `<option value="${p.control}">${p.oaci ? `${p.oaci} · ` : ''}${formatControl(p.control)} · ${p.nombres || ''}</option>`)
-          .join('');
+    refreshPersonaOptions({ preserveSelection: false });
+    if (state.personaControl) {
+      setPersonaControl(state.personaControl, { updateSearch: true, silent: true });
     }
     if (el.personaYearSelect && Array.isArray(data.years)) {
       refreshYearsSelect(el.personaYearSelect, data.years, state.personaYear);
@@ -1087,6 +1516,7 @@ function toggleModeElements() {
           if (!sw.checked && el.oaciAll) {
             el.oaciAll.checked = false;
           }
+          refreshPersonaOptions();
           refreshActive();
         });
       });

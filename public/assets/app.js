@@ -127,140 +127,220 @@ function renderRTARI(rtari, rtari_vig){
   // ================================
   // Modal de Documentos
   // ================================
-  window.openDocumentsModal = async function (control, nombre) {
-    const m = document.getElementById('docModal');
-    if (!m) { alert('Modal de documentos no está en esta página.'); return; }
+  const DOC_DEFINITIONS = [
+    { key: 'licencia1', label: 'Licencia 1' },
+    { key: 'licencia2', label: 'Licencia 2' },
+    { key: 'examen_medico', label: 'Cert. Médico' },
+    { key: 'rtari', label: 'RTARI' },
+    { key: 'nombramientos', label: 'Nombramientos' },
+    { key: 'misc', label: 'Varios' },
+  ];
 
-    const title = m.querySelector('#docModalTitle') || m.querySelector('.modal-title');
+  const docUrl = (info) => {
+    if (!info || !info.url) return '';
+    return info.url.startsWith('http') ? info.url : `${API_BASE}${info.url.replace(/^\/+/, '')}`;
+  };
+
+  window.openDocumentsModal = async function (control, nombre) {
+    const modal = document.getElementById('docModal');
+    if (!modal) { alert('Modal de documentos no está en esta página.'); return; }
+
+    const title = modal.querySelector('#docModalTitle') || modal.querySelector('.modal-title');
     if (title) title.textContent = `Documentos — ${nombre || ''} · #${control}`;
 
-    const tiles   = m.querySelector('#docTiles');
-    const prev    = m.querySelector('#docPreview');
-    const prevImg = m.querySelector('#docPreviewImg');
-    const prevPdf = m.querySelector('#docPreviewPdf');
-    const prevInfo= m.querySelector('#docPreviewInfo');
-    const prevMsg = m.querySelector('#docPreviewMsg');
+    let dropZone = modal.querySelector('#docDropZone');
+    if (dropZone) {
+      const clone = dropZone.cloneNode(true);
+      dropZone.parentNode.replaceChild(clone, dropZone);
+      dropZone = clone;
+    }
+    const tiles = modal.querySelector('#docTiles');
+    const dropType = modal.querySelector('#docDropType');
+    let browseBtn = modal.querySelector('#docBrowseBtn');
+    if (browseBtn) {
+      const cloneBtn = browseBtn.cloneNode(true);
+      browseBtn.parentNode.replaceChild(cloneBtn, browseBtn);
+      browseBtn = cloneBtn;
+    }
+    const prev = modal.querySelector('#docPreview');
+    const prevImg = modal.querySelector('#docPreviewImg');
+    const prevPdf = modal.querySelector('#docPreviewPdf');
+    const prevInfo = modal.querySelector('#docPreviewInfo');
+    const prevMsg = modal.querySelector('#docPreviewMsg');
+    const fileInput = document.getElementById('docFileInput');
 
-    // limpia preview
     if (prev) prev.classList.add('d-none');
-    if (prevImg) { prevImg.src=''; prevImg.classList.add('d-none'); }
-    if (prevPdf) { prevPdf.src=''; prevPdf.classList.add('d-none'); }
+    if (prevImg) { prevImg.src = ''; prevImg.classList.add('d-none'); }
+    if (prevPdf) { prevPdf.src = ''; prevPdf.classList.add('d-none'); }
     if (prevInfo) prevInfo.textContent = '';
-    if (prevMsg)  prevMsg.textContent  = '';
+    if (prevMsg) prevMsg.textContent = '';
+    if (fileInput) fileInput.value = '';
 
-    // carga estado
-    let data = {};
-    try {
-      const res = await fetchJSON(`${API_BASE}doc_exists.php?control=${encodeURIComponent(control)}`);
-      data = (res && res.data) ? res.data : {};
-    } catch(e) {
-      data = {};
-      const msg = (e && e.status === 401) ? 'Sesión no autorizada para ver documentos.' :
-                  (e && e.status === 403) ? 'No tiene permisos para ver documentos de este trabajador.' :
-                  `Error al cargar documentos (${e.message||'desconocido'})`;
-      if (prevMsg) { prevMsg.textContent = msg; }
+    if (dropType) {
+      dropType.innerHTML = DOC_DEFINITIONS.map((def) => `<option value="${def.key}">${def.label}</option>`).join('');
+      dropType.value = 'misc';
     }
 
-    const define = [
-      { key:'lic1',  label:'Licencia 1' },
-      { key:'lic2',  label:'Licencia 2' },
-      { key:'med',   label:'Cert. Médico' },
-      { key:'rtari', label:'RTARI' },
-      { key:'misc',  label:'Varios' }
-    ];
+    let docData = {};
 
-    if (tiles) {
-      tiles.setAttribute('data-control', control);
-      tiles.innerHTML = define.map(d=>{
-        const exists = !!data[d.key];
+    const resolveInfo = (type) => {
+      const info = docData ? docData[type] : null;
+      if (!info) return null;
+      if (type === 'misc' && Array.isArray(info.items) && info.items.length) {
+        if (info.items.length === 1) return info.items[0];
+        const choices = info.items.map((item, idx) => `${idx + 1}. ${item.filename || item.tipo || 'Documento'}`).join('\n');
+        const selection = window.prompt(`Seleccione el documento a ver:\n${choices}`, '1');
+        const index = Number(selection) - 1;
+        if (!Number.isInteger(index) || index < 0 || index >= info.items.length) return null;
+        return info.items[index];
+      }
+      return info;
+    };
+
+    const handleUpload = async (file, targetType) => {
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('control', control);
+      fd.append('tipo', targetType);
+      if (targetType === 'misc') {
+        fd.append('multi', '1');
+      }
+      fd.append('file', file);
+      try {
+        await fetchJSON(`${API_BASE}doc_upload.php`, { method: 'POST', body: fd });
+        await refreshDocs();
+      } catch (err) {
+        let msg = err.message || 'Error al subir';
+        if (err.status === 401) msg = 'Sesión expirada o no autorizada para subir.';
+        if (err.status === 403) msg = 'No tiene permisos para subir documentos a este trabajador.';
+        window.alert(msg);
+      }
+    };
+
+    const renderTiles = () => {
+      if (!tiles) return;
+      tiles.innerHTML = DOC_DEFINITIONS.map((def) => {
+        const info = docData ? docData[def.key] : null;
+        const exists = def.key === 'misc'
+          ? Boolean(info && (info.count || (Array.isArray(info.items) && info.items.length)))
+          : Boolean(info && info.exists);
+        const badgeText = def.key === 'misc'
+          ? (exists ? `${info.count || (info.items ? info.items.length : 0)} archivo(s)` : 'Sin archivos')
+          : exists ? 'Disponible' : 'No existe';
+        const thumb = exists && def.key !== 'misc' && info && info.mime && info.mime.startsWith('image/')
+          ? docUrl(info)
+          : '';
         return `
         <div class="col-12 col-sm-6 col-lg-4">
-          <div class="p-3 rounded-3 h-100" style="background:#141a26;border:1px solid rgba(255,255,255,.08)">
+          <div class="doc-tile h-100" data-doc-type="${def.key}">
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <strong>${d.label}</strong>
-              <span class="badge ${exists?'bg-success':'bg-secondary'}">${exists?'Disponible':'No existe'}</span>
+              <strong>${def.label}</strong>
+              <span class="badge ${exists ? 'bg-success' : 'bg-secondary'}">${badgeText}</span>
             </div>
+            ${thumb ? `<div class="doc-thumb mb-2"><img src="${thumb}" alt="${def.label}"></div>` : ''}
             <div class="d-flex flex-wrap gap-2">
-              <button class="btn btn-sm btn-primary" data-doc-act="view" data-doc-type="${d.key}" ${exists?'':'disabled'}>Ver</button>
-              <button class="btn btn-sm btn-outline-light" data-doc-act="update" data-doc-type="${d.key}">Actualizar</button>
-              <button class="btn btn-sm btn-outline-danger" data-doc-act="delete" data-doc-type="${d.key}" ${exists?'':'disabled'}>Eliminar</button>
+              <button class="btn btn-sm btn-primary" data-doc-act="view" data-doc-type="${def.key}" ${exists ? '' : 'disabled'}>Ver</button>
+              <button class="btn btn-sm btn-outline-light" data-doc-act="update" data-doc-type="${def.key}">Actualizar</button>
             </div>
           </div>
         </div>`;
       }).join('');
 
-      tiles.querySelectorAll('[data-doc-act]').forEach(btn=>{
-        btn.addEventListener('click', async ()=>{
-          const act  = btn.getAttribute('data-doc-act');
-          const type = btn.getAttribute('data-doc-type');
+      tiles.querySelectorAll('[data-doc-type]').forEach((tile) => {
+        const type = tile.getAttribute('data-doc-type') || 'misc';
+        tile.addEventListener('dragover', (ev) => {
+          ev.preventDefault();
+          tile.classList.add('is-dragging');
+        });
+        tile.addEventListener('dragleave', () => tile.classList.remove('is-dragging'));
+        tile.addEventListener('drop', (ev) => {
+          ev.preventDefault();
+          tile.classList.remove('is-dragging');
+          const file = ev.dataTransfer?.files?.[0];
+          if (file) handleUpload(file, type);
+        });
+      });
 
+      tiles.querySelectorAll('[data-doc-act]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const act = btn.getAttribute('data-doc-act');
+          const type = btn.getAttribute('data-doc-type') || 'misc';
           if (act === 'view') {
-            const info = data[type];
-            if (!info || !info.url) return;
-
+            const info = resolveInfo(type);
+            const url = docUrl(info);
+            if (!info || !url) return;
             if (prev) prev.classList.remove('d-none');
-            if (prevInfo) prevInfo.textContent = info.filename || info.url;
-
-            if ((info.mime||'').includes('pdf') || /\.pdf$/i.test(info.url)) {
-              if (prevPdf) { prevPdf.src = info.url; prevPdf.classList.remove('d-none'); }
-            } else if ((info.mime||'').startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(info.url)) {
-              if (prevImg) { prevImg.src = info.url; prevImg.classList.remove('d-none'); }
+            if (prevInfo) prevInfo.textContent = info.filename || url;
+            if ((info.mime || '').includes('pdf') || /\.pdf$/i.test(url)) {
+              if (prevPdf) { prevPdf.src = url; prevPdf.classList.remove('d-none'); }
+              if (prevImg) prevImg.classList.add('d-none');
+            } else if ((info.mime || '').startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(url)) {
+              if (prevImg) { prevImg.src = url; prevImg.classList.remove('d-none'); }
+              if (prevPdf) prevPdf.classList.add('d-none');
             } else {
-              window.open(info.url, '_blank', 'noopener');
+              window.open(url, '_blank', 'noopener');
             }
             return;
           }
-
-          if (act === 'update') {
-            const inp = document.getElementById('docFileInput');
-            if (!inp) return;
-            inp.value = '';
-            inp.onchange = async ()=>{
-              if (!inp.files || !inp.files[0]) return;
-              const fd = new FormData();
-              fd.append('control', control);
-              fd.append('type', type);
-              fd.append('file', inp.files[0]);
-              try {
-                const up = await fetchJSON(`${API_BASE}doc_upload.php`, { method:'POST', body:fd });
-                if (!up || up.ok!==true) throw new Error((up && up.msg) ? up.msg : 'Error al subir');
-                const res2 = await fetchJSON(`${API_BASE}doc_exists.php?control=${encodeURIComponent(control)}`);
-                data = (res2 && res2.data) ? res2.data : {};
-                openDocumentsModal(control, nombre);
-              } catch(e){
-                let msg = e.message || 'Error al subir';
-                if (e.status === 401) msg = 'Sesión expirada o no autorizada para subir.';
-                if (e.status === 403) msg = 'No tiene permisos para subir documentos a este trabajador.';
-                alert(msg);
+          if (act === 'update' && fileInput) {
+            fileInput.value = '';
+            fileInput.onchange = () => {
+              if (fileInput.files && fileInput.files[0]) {
+                handleUpload(fileInput.files[0], type);
               }
             };
-            inp.click();
-            return;
-          }
-
-          if (act === 'delete') {
-            if (!confirm('¿Eliminar documento?')) return;
-            const fd = new FormData();
-            fd.append('control', control);
-            fd.append('type', type);
-            try {
-              const del = await fetchJSON(`${API_BASE}doc_delete.php`, { method:'POST', body:fd });
-              if (!del || del.ok!==true) throw new Error((del && del.msg) ? del.msg : 'No se pudo eliminar');
-              const res3 = await fetchJSON(`${API_BASE}doc_exists.php?control=${encodeURIComponent(control)}`);
-              data = (res3 && res3.data) ? res3.data : {};
-              openDocumentsModal(control, nombre);
-            } catch(e){
-              let msg = e.message || 'No se pudo eliminar';
-              if (e.status === 401) msg = 'Sesión expirada o no autorizada para eliminar.';
-              if (e.status === 403) msg = 'No tiene permisos para eliminar documentos de este trabajador.';
-              alert(msg);
-            }
+            fileInput.click();
           }
         });
       });
+    };
+
+    const refreshDocs = async () => {
+      try {
+        const res = await fetchJSON(`${API_BASE}doc_exists.php?control=${encodeURIComponent(control)}`);
+        docData = (res && res.data) ? res.data : {};
+      } catch (err) {
+        docData = {};
+        const msg = err.status === 401 ? 'Sesión no autorizada para ver documentos.'
+          : err.status === 403 ? 'No tiene permisos para ver documentos de este trabajador.'
+          : `Error al cargar documentos (${err.message || 'desconocido'})`;
+        if (prevMsg) prevMsg.textContent = msg;
+      }
+      renderTiles();
+    };
+
+    if (dropZone) {
+      dropZone.addEventListener('dragover', (ev) => {
+        ev.preventDefault();
+        dropZone.classList.add('is-dragging');
+      });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-dragging'));
+      dropZone.addEventListener('drop', (ev) => {
+        ev.preventDefault();
+        dropZone.classList.remove('is-dragging');
+        const file = ev.dataTransfer?.files?.[0];
+        if (file) {
+          const targetType = dropType ? dropType.value : 'misc';
+          handleUpload(file, targetType || 'misc');
+        }
+      });
     }
 
-    bootstrap.Modal.getOrCreateInstance(m).show();
+    if (browseBtn && fileInput) {
+      browseBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        fileInput.onchange = () => {
+          if (fileInput.files && fileInput.files[0]) {
+            const targetType = dropType ? dropType.value : 'misc';
+            handleUpload(fileInput.files[0], targetType || 'misc');
+          }
+        };
+        fileInput.click();
+      });
+    }
+
+    await refreshDocs();
+    bootstrap.Modal.getOrCreateInstance(modal).show();
   };
 
   // ================================

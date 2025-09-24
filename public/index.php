@@ -353,14 +353,26 @@ $hasStationAccess = is_admin() || count($stationOptions) > 0;
             <div id="docPreview" class="mb-3 d-none">
               <div id="docPreviewInfo" class="small text-secondary mb-2"></div>
               <img id="docPreviewImg" alt="Vista previa" class="img-fluid d-none">
-              <iframe id="docPreviewPdf" class="w-100 d-none"
-                      style="height:60vh; border:1px solid var(--border)"></iframe>
+              <iframe id="docPreviewPdf" class="w-100 d-none" style="height:60vh; border:1px solid var(--border)"></iframe>
               <div id="docPreviewMsg" class="small text-warning mt-2"></div>
             </div>
-    
+
+            <div id="docDropZone" class="doc-dropzone mb-3" tabindex="0">
+              <div class="doc-drop-inner">
+                <div class="doc-drop-icon mb-2">📄</div>
+                <p class="mb-2">Arrastra y suelta un documento aquí</p>
+                <div class="doc-drop-controls d-flex flex-wrap align-items-center justify-content-center gap-2">
+                  <label class="form-label mb-0 small text-secondary" for="docDropType">Guardar como</label>
+                  <select id="docDropType" class="form-select form-select-sm" style="min-width:160px"></select>
+                  <button type="button" class="btn btn-sm btn-outline-light" id="docBrowseBtn">Seleccionar archivo</button>
+                </div>
+                <div class="small text-secondary mt-2">Formatos permitidos: PDF, JPG, PNG, WEBP (máx 25 MB)</div>
+              </div>
+            </div>
+
             <!-- Tarjetas de documentos -->
             <div id="docTiles" class="row g-3" data-control=""></div>
-    
+
             <!-- Input oculto para subir -->
             <input type="file" id="docFileInput" class="d-none" accept="image/*,application/pdf">
           </div>
@@ -396,6 +408,5 @@ $hasStationAccess = is_admin() || count($stationOptions) > 0;
 
 <?php require __DIR__ . '/includes/Foot-js.php'; ?>
 <!-- Toda la lógica de la tabla/documents vive en /public/assets/app.js -->
-</body>
 </body>
 </html>

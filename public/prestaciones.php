@@ -89,26 +89,31 @@ if (!$u) {
       font-size: .85rem;
     }
     .nav-tabs {
+      --tab-gap: .5rem;
       border-bottom: 0;
       margin-bottom: 0;
+      gap: var(--tab-gap);
     }
     .nav-tabs .nav-link {
       border: 1px solid var(--bs-border-color);
       border-bottom: none;
-      border-radius: .75rem .75rem 0 0;
-      margin-right: .25rem;
+      border-radius: .9rem;
       background: var(--bs-body-bg);
       color: var(--bs-secondary-color);
+      padding-inline: 1.25rem;
+      text-align: center;
+      min-width: 11rem;
     }
     .nav-tabs .nav-link.active {
       background: var(--bs-card-bg);
       color: var(--bs-body-color);
       font-weight: 600;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06);
     }
     .tab-content {
       border: 1px solid var(--bs-border-color);
       border-top: none;
-      border-radius: 0 0 .75rem .75rem;
+      border-radius: 1rem;
       padding: 1rem;
       background: var(--bs-card-bg);
     }
@@ -121,6 +126,119 @@ if (!$u) {
       border-radius: 0;
       border-bottom: 1px solid var(--bs-border-color);
       padding-bottom: .5rem;
+    }
+    .persona-search-input {
+      position: relative;
+    }
+    .persona-search-input input[type="search"] {
+      padding-right: 2.5rem;
+    }
+    .persona-search-input .persona-clear {
+      position: absolute;
+      top: 50%;
+      right: .5rem;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: var(--bs-secondary-color);
+      padding: 0;
+      display: none;
+    }
+    .persona-search-input.has-value .persona-clear {
+      display: inline-flex;
+    }
+    .vac-action-pill {
+      display: flex;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.15);
+    }
+    .vac-action-pill button {
+      flex: 1 1 50%;
+      border: none;
+      border-radius: 0;
+      padding: .35rem .75rem;
+      font-weight: 600;
+    }
+    .vac-action-pill .btn-add {
+      background: #21563a;
+      color: #d5f5e3;
+    }
+    .vac-action-pill .btn-edit {
+      background: #123c70;
+      color: #dbe9ff;
+    }
+    .vac-action-pill button:hover,
+    .vac-action-pill button:focus {
+      filter: brightness(1.1);
+    }
+    .vac-records-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+    .vac-records-table th,
+    .vac-records-table td {
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: .5rem .75rem;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .vac-records-table th:first-child,
+    .vac-records-table td:first-child {
+      border-left: none;
+    }
+    .vac-records-table td:last-child {
+      width: 1%;
+    }
+    .vac-records-empty {
+      padding: 1.5rem 1rem;
+      border: 1px dashed rgba(255,255,255,.15);
+      border-radius: .75rem;
+      text-align: center;
+      color: var(--bs-secondary-color);
+      background: rgba(20,26,38,.35);
+    }
+    @media (max-width: 767.98px) {
+      .nav-tabs {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .nav-tabs .nav-link {
+        flex: 1 1 calc(25% - var(--tab-gap));
+        margin-right: 0;
+      }
+    }
+    @media (max-width: 575.98px) {
+      .nav-tabs .nav-link {
+        flex: 1 1 calc(50% - var(--tab-gap));
+      }
+      .toolbar-gap {
+        width: 100%;
+      }
+      #personaSelectWrap,
+      #anioPersonaWrap,
+      #personaanioWrap,
+      #anioSelectWrap {
+        flex: 1 1 100%;
+        min-width: 0 !important;
+      }
+      #personaSelectWrap .persona-search-input,
+      #anioPersonaWrap select,
+      #personaanioWrap select,
+      #anioSelectWrap select {
+        width: 100%;
+      }
+      #modeSwitch {
+        width: 100%;
+        justify-content: center;
+      }
+      .dropdown#stationFilterDropdown {
+        width: 100%;
+      }
+      .dropdown#stationFilterDropdown > button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -185,8 +303,13 @@ if (!$u) {
           <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="anio">Año</button>
         </div>
 
-        <div id="personaSelectWrap" class="me-2" style="min-width:320px">
-          <select id="personaSelect" class="form-select" aria-label="Trabajador"></select>
+        <div id="personaSelectWrap" class="me-2 flex-grow-1" style="min-width:320px">
+          <div class="persona-search-input">
+            <input id="personaSearch" type="search" class="form-control" placeholder="Trabajador…" autocomplete="off" list="personaOptions">
+            <button type="button" class="persona-clear" aria-label="Limpiar selección">&times;</button>
+          </div>
+          <datalist id="personaOptions"></datalist>
+          <input type="hidden" id="personaSelect" value="">
         </div>
         <div id="anioPersonaWrap" class="me-2" style="min-width:160px">
           <select id="anioPersonaSelect" class="form-select" aria-label="Año (persona)"></select>
@@ -197,17 +320,18 @@ if (!$u) {
         <div id="anioSelectWrap" class="me-2 d-none" style="min-width:160px">
           <select id="anioSelect" class="form-select" aria-label="Año"></select>
         </div>
-        <div class="dropdown me-2">
+        <div class="dropdown me-2" id="stationFilterDropdown">
           <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="oaciDropdown" data-bs-toggle="dropdown" aria-expanded="false">Filtrar Estaciones</button>
-             <div class="dropdown-menu p-3 dropdown-menu-end" aria-labelledby="oaciDropdown" style="min-width:280px;max-height:260px;overflow:auto">
-                        <div class="form-check form-switch mb-2">
-                          <input class="form-check-input" type="checkbox" role="switch" id="oaciAll">
-                          <label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
-                          <div class="mt-2" id="oaciList"></div>
-                        </div>
-             </div>
+          <ul class="dropdown-menu p-3" aria-labelledby="oaciDropdown" style="min-width:280px;max-height:260px;overflow:auto">
+            <li class="mb-2">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="oaciAll">
+                <label class="form-check-label" for="oaciAll"><strong>&nbsp;Seleccionar todas</strong></label>
+              </div>
+            </li>
+            <li><div id="oaciList"></div></li>
+          </ul>
         </div>
-              <div id="oaciList"></div>
     </div>
    </div>
   </div>
@@ -217,16 +341,28 @@ if (!$u) {
       <!-- Tabs -->
       <ul class="nav nav-tabs mt-2" id="prestTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="tab-pecos" data-bs-toggle="tab" data-bs-target="#pane-pecos" type="button" role="tab" aria-controls="pane-pecos" aria-selected="true">Días Economicos (PECO)</button>
+          <button class="nav-link active" id="tab-pecos" data-bs-toggle="tab" data-bs-target="#pane-pecos" type="button" role="tab" aria-controls="pane-pecos" aria-selected="true">
+            <span class="d-sm-none">Económicos</span>
+            <span class="d-none d-sm-inline">Días Económicos (PECO)</span>
+          </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-txt" data-bs-toggle="tab" data-bs-target="#pane-txt" type="button" role="tab" aria-controls="pane-txt" aria-selected="false">Días Acumulables (Tiempo x Tiempo)</button>
+          <button class="nav-link" id="tab-txt" data-bs-toggle="tab" data-bs-target="#pane-txt" type="button" role="tab" aria-controls="pane-txt" aria-selected="false">
+            <span class="d-sm-none">Acumulables</span>
+            <span class="d-none d-sm-inline">Días Acumulables (Tiempo x Tiempo)</span>
+          </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-vac" data-bs-toggle="tab" data-bs-target="#pane-vac" type="button" role="tab" aria-controls="pane-vac" aria-selected="false">Vacaciones, P. Recuperacion y Antigüedad</button>
+          <button class="nav-link" id="tab-vac" data-bs-toggle="tab" data-bs-target="#pane-vac" type="button" role="tab" aria-controls="pane-vac" aria-selected="false">
+            <span class="d-sm-none">Vacaciones</span>
+            <span class="d-none d-sm-inline">Vacaciones, PR, Recuperación y Antigüedad</span>
+          </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-inc" data-bs-toggle="tab" data-bs-target="#pane-inc" type="button" role="tab" aria-controls="pane-inc" aria-selected="false">Licencias Medicas (Incapacidades)</button>
+          <button class="nav-link" id="tab-inc" data-bs-toggle="tab" data-bs-target="#pane-inc" type="button" role="tab" aria-controls="pane-inc" aria-selected="false">
+            <span class="d-sm-none">Incapacidades</span>
+            <span class="d-none d-sm-inline">Licencias Médicas (Incapacidades)</span>
+          </button>
         </li>
       </ul>
       <div class="tab-content" id="prestTabsContent">
