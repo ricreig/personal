@@ -281,16 +281,16 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     const tbody = table.tBodies[0];
     tbody.innerHTML = '';
     if (!rows.length) {
-      clearTable(table, 15, 'Sin datos…');
+      clearTable(table, 14, 'Sin datos…');
       return;
     }
     rows.forEach((row) => {
       const tr = document.createElement('tr');
+      const actionDetail = { ...row, control: state.personaControl };
       tr.innerHTML = `
         <td>${row.year}</td>
-        ${Array.from({ length: 12 }, (_, i) => `<td class="text-center">${row['dia' + (i + 1)] ?? '0'}</td>`).join('')}
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="pecos" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-year="${row.year}">Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="pecos" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-year="${row.year}">Eliminar</button></td>
+        ${Array.from({ length: 12 }, (_, i) => `<td class="text-center">${row[`dia${i + 1}`] ?? '0'}</td>`).join('')}
+        <td class="nowrap">${renderActionCell('persona', 'pecos', actionDetail)}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -309,12 +309,12 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     const targetYear = data.year ?? state.year;
     rows.forEach((row) => {
       const tr = document.createElement('tr');
+      const actionDetail = { ...row, year: targetYear };
       tr.innerHTML = `
         <td class="nowrap">${row.oaci || ''}</td>
         <td class="nowrap">${formatControl(row.control)} · ${row.nombres || ''}</td>
-        ${Array.from({ length: 12 }, (_, i) => `<td class="text-center">${row['dia' + (i + 1)] ?? '0'}</td>`).join('')}
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="pecos" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}">Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="pecos" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}">Eliminar</button></td>
+        ${Array.from({ length: 12 }, (_, i) => `<td class="text-center">${row[`dia${i + 1}`] ?? '0'}</td>`).join('')}
+        <td class="nowrap">${renderActionCell('anio', 'pecos', actionDetail)}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -327,11 +327,12 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     const tbody = table.tBodies[0];
     tbody.innerHTML = '';
     if (!rows.length) {
-      clearTable(table, 10, 'Sin datos…');
+      clearTable(table, 9, 'Sin datos…');
       return;
     }
     rows.forEach((row) => {
       const tr = document.createElement('tr');
+      const actionDetail = { ...row, control: state.personaControl };
       tr.innerHTML = `
         <td>${row.year}</td>
         <td class="text-center">${row.js ?? '0'}</td>
@@ -341,8 +342,7 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
         <td class="text-center">${row.muert ?? '0'}</td>
         <td class="text-center">${row.ono ?? '0'}</td>
         <td>${row.fnac || ''}</td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="txt" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-year="${row.year}">Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="txt" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-year="${row.year}">Eliminar</button></td>
+        <td class="nowrap">${renderActionCell('persona', 'txt', actionDetail)}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -355,12 +355,13 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     const tbody = table.tBodies[0];
     tbody.innerHTML = '';
     if (!rows.length) {
-      clearTable(table, 11, 'Sin datos…');
+      clearTable(table, 10, 'Sin datos…');
       return;
     }
     const targetYear = data.year ?? state.year;
     rows.forEach((row) => {
       const tr = document.createElement('tr');
+      const actionDetail = { ...row, year: targetYear };
       tr.innerHTML = `
         <td class="nowrap">${row.oaci || ''}</td>
         <td class="nowrap">${formatControl(row.control)} · ${row.nombres || ''}</td>
@@ -371,8 +372,7 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
         <td class="text-center">${row.muert ?? '0'}</td>
         <td class="text-center">${row.ono ?? '0'}</td>
         <td>${row.fnac || ''}</td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="txt" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}">Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="txt" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}">Eliminar</button></td>
+        <td class="nowrap">${renderActionCell('anio', 'txt', actionDetail)}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -397,30 +397,41 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     return { vac1, vac2 };
   }
 
-  function renderActionCell(scope, type, row) {
-    const controlValue = row.control ?? row.control_fmt ?? '';
-    const control = String(controlValue ?? '');
-    const attrs = `data-prest-type="${type}" data-prest-scope="${scope}" data-prest-control="${control}"`;
-    const yearValue = row.year ?? '';
-    const yearAttr = yearValue !== '' ? ` data-prest-year="${yearValue}"` : '';
+  function serializeActionAttributes(pairs) {
+    return pairs
+      .filter(([, value]) => value !== undefined && value !== null && String(value) !== '')
+      .map(([key, value]) => `${key}="${String(value)}"`)
+      .join(' ');
+  }
+
+  function renderActionCell(scope, type, row = {}) {
     const flags = renderFlags(row.flags);
-    if (type === 'vac') {
-      return `
-        <div class="d-inline-flex align-items-center gap-2 flex-wrap">
-          ${flags ? `<span class="text-nowrap">${flags}</span>` : ''}
-          <div class="vac-action-pill">
-            <button type="button" class="btn btn-add" data-prest-action="add" ${attrs}${yearAttr}>Agregar</button>
-            <button type="button" class="btn btn-edit" data-prest-action="edit" ${attrs}${yearAttr}>Editar</button>
-          </div>
-        </div>
-      `;
+    const controlValue = row.control ?? row.control_fmt ?? '';
+    const yearValue = row.year ?? '';
+    const idValue = row.id ?? row.Id ?? row.ID ?? '';
+
+    const basePairs = [
+      ['data-prest-type', type],
+      ['data-prest-scope', scope],
+      ['data-prest-control', controlValue],
+    ];
+    if (String(yearValue) !== '') {
+      basePairs.push(['data-prest-year', yearValue]);
     }
+
+    const addAttrs = serializeActionAttributes(basePairs);
+    const editPairs = basePairs.slice();
+    if (String(idValue) !== '') {
+      editPairs.push(['data-prest-id', idValue]);
+    }
+    const editAttrs = serializeActionAttributes(editPairs);
+
     return `
       <div class="d-inline-flex align-items-center gap-2 flex-wrap">
         ${flags ? `<span class="text-nowrap">${flags}</span>` : ''}
-        <div class="btn-group btn-group-sm">
-          <button type="button" class="btn btn-outline-primary" data-prest-action="edit" ${attrs}${yearAttr}>Editar</button>
-          <button type="button" class="btn btn-outline-danger" data-prest-action="delete" ${attrs}${yearAttr}>Eliminar</button>
+        <div class="vac-action-pill">
+          <button type="button" class="btn btn-add" data-prest-action="add" ${addAttrs}>Agregar</button>
+          <button type="button" class="btn btn-edit" data-prest-action="edit" ${editAttrs}>Editar</button>
         </div>
       </div>
     `;
@@ -444,6 +455,7 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     rows.forEach((row) => {
       const { vac1, vac2 } = splitVacLeft(row.dias_left);
       const tr = document.createElement('tr');
+      const actionDetail = { ...row, control: row.control ?? state.personaControl };
       tr.innerHTML = `
         <td class="text-center">${row.year}</td>
         <td class="text-center">${row.ant_asig}</td>
@@ -452,7 +464,7 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
         <td class="text-center">${vac2}</td>
         <td class="text-center">${row.ant_usados}</td>
         <td class="text-center">${row.pr_usados}</td>
-        <td class="nowrap">${renderActionCell('persona', 'vac', row)}</td>
+        <td class="nowrap">${renderActionCell('persona', 'vac', actionDetail)}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -682,7 +694,8 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
       ensureModal()?.show();
       return;
     }
-    setModalTitle(formatYearTitle('Editar PECO', detail.year));
+    const titlePrefix = detail.action === 'add' ? 'Registrar PECO' : 'Editar PECO';
+    setModalTitle(formatYearTitle(titlePrefix, detail.year));
     setModalMessage('Cargando registro…', 'info');
     ensureModal()?.show();
     try {
@@ -719,7 +732,8 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
       ensureModal()?.show();
       return;
     }
-    setModalTitle(formatYearTitle('Editar Tiempo x Tiempo', detail.year));
+    const titlePrefix = detail.action === 'add' ? 'Registrar Tiempo x Tiempo' : 'Editar Tiempo x Tiempo';
+    setModalTitle(formatYearTitle(titlePrefix, detail.year));
     setModalMessage('Cargando registro…', 'info');
     ensureModal()?.show();
     try {
@@ -1065,9 +1079,20 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
   }
 
   function openIncEdit(detail) {
-    setModalTitle('Editar incapacidad');
+    const isAdd = detail.action === 'add';
+    setModalTitle(isAdd ? 'Registrar incapacidad' : 'Editar incapacidad');
     ensureModal()?.show();
-    const parsed = extractIncRow(detail);
+    const parsed = isAdd
+      ? {
+          year: detail.year || '',
+          folio: '',
+          inicia: '',
+          termina: '',
+          dias: '',
+          umf: '',
+          diag: '',
+        }
+      : extractIncRow(detail);
     const fields = [
       { type: 'hidden', name: 'id', value: detail.id || '0' },
       { type: 'hidden', name: 'control', value: detail.control || '' },
@@ -1298,12 +1323,17 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     const tbody = table.tBodies[0];
     tbody.innerHTML = '';
     if (!rows.length) {
-      clearTable(table, 9, 'Sin datos…');
+      clearTable(table, 8, 'Sin datos…');
       return;
     }
     rows.forEach((row) => {
       const tr = document.createElement('tr');
       const yearText = row.INICIA && row.INICIA.includes('/') ? row.INICIA.split('/').pop() : '';
+      const actionDetail = {
+        control: state.personaControl,
+        year: yearText || '',
+        id: row.Id ?? row.id ?? row.ID ?? '',
+      };
       tr.innerHTML = `
         <td>${yearText || ''}</td>
         <td>${row.FOLIO || ''}</td>
@@ -1312,8 +1342,7 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
         <td class="text-center">${row.DIAS ?? 0}</td>
         <td>${row.UMF || ''}</td>
         <td>${row.DIAGNOSTICO || ''}</td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="inc" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-id="${row.Id ?? row.id ?? ''}" data-prest-year="${yearText || ''}">Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="inc" data-prest-scope="persona" data-prest-control="${state.personaControl}" data-prest-id="${row.Id ?? row.id ?? ''}" data-prest-year="${yearText || ''}">Eliminar</button></td>
+        <td class="nowrap">${renderActionCell('persona', 'inc', actionDetail)}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -1326,12 +1355,17 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
     const tbody = table.tBodies[0];
     tbody.innerHTML = '';
     if (!rows.length) {
-      clearTable(table, 10, 'Sin datos…');
+      clearTable(table, 9, 'Sin datos…');
       return;
     }
     const targetYear = data.year ?? state.year;
     rows.forEach((row) => {
       const tr = document.createElement('tr');
+      const actionDetail = {
+        ...row,
+        year: targetYear,
+        id: row.Id ?? row.id ?? row.ID ?? '',
+      };
       tr.innerHTML = `
         <td class="nowrap">${row.oaci || ''}</td>
         <td class="nowrap">${formatControl(row.control)} · ${row.nombres || ''}</td>
@@ -1341,8 +1375,7 @@ const API_BASE = (window.API_BASE || '/api/').replace(/\/+$/, '') + '/';
         <td class="text-center">${row.DIAS ?? 0}</td>
         <td>${row.UMF || ''}</td>
         <td>${row.DIAGNOSTICO || ''}</td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-primary" data-prest-action="edit" data-prest-type="inc" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}" data-prest-id="${row.Id ?? row.id ?? ''}">Editar</button></td>
-        <td class="nowrap"><button class="btn btn-sm btn-outline-danger" data-prest-action="delete" data-prest-type="inc" data-prest-scope="anio" data-prest-control="${row.control}" data-prest-year="${targetYear}" data-prest-id="${row.Id ?? row.id ?? ''}">Eliminar</button></td>
+        <td class="nowrap">${renderActionCell('anio', 'inc', actionDetail)}</td>
       `;
       tbody.appendChild(tr);
     });
