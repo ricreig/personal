@@ -48,3 +48,84 @@ body { font-family: 'Montserrat', system-ui, -apple-system, Segoe UI, Roboto, sa
 /* Botones acción: outline por defecto; verde cuando hay docs */
 .btn-outline-primary { --bs-btn-color: var(--comp-azul); --bs-btn-border-color: var(--comp-azul); }
 .btn-success { background: var(--triada-verde); border-color: var(--triada-verde); color:#10200a; }
+
+/* ===============================
+   Modal de Documentos (drag & drop)
+   =============================== */
+.doc-dropzone {
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  background: rgba(10, 56, 115, 0.08);
+}
+
+.doc-dropzone:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.25rem rgba(4, 104, 191, 0.25);
+  border-color: rgba(4, 104, 191, 0.85);
+}
+
+.doc-dropzone.is-dragging {
+  border-color: rgba(180, 191, 4, 0.85);
+  background: rgba(180, 191, 4, 0.12);
+}
+
+.doc-drop-inner {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.doc-drop-icon {
+  font-size: 2.5rem;
+}
+
+.doc-drop-controls .form-select,
+.doc-drop-controls .btn {
+  min-width: 160px;
+}
+
+.doc-tile {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: rgba(21, 24, 36, 0.65);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.doc-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(4, 104, 191, 0.5);
+  box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.25);
+}
+
+.doc-tile.is-dragging {
+  border-color: rgba(180, 191, 4, 0.85);
+  background: rgba(180, 191, 4, 0.08);
+}
+
+.doc-thumb {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.doc-thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 575.98px) {
+  .doc-dropzone {
+    padding: 1.25rem;
+  }
+
+  .doc-drop-controls .form-select,
+  .doc-drop-controls .btn {
+    width: 100%;
+  }
+}
