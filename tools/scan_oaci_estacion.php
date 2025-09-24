@@ -1,12 +1,9 @@
 #!/usr/bin/env php
 <?php
-<<<<<<< HEAD
-<<<<<<< HEAD
 declare(strict_types=1);
-=======
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
-=======
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
+
+require_once __DIR__ . '/write_out.php';
+
 $root = dirname(__DIR__);
 $rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
 $hits = [];
@@ -32,15 +29,16 @@ foreach ($rii as $file) {
     }
     foreach ($matches[0] as $match) {
         $offset = $match[1];
-        $line = substr_count(substr($code, 0, $offset), "\\n") + 1;
+        $line = substr_count(substr($code, 0, $offset), "\n") + 1;
         $hits[] = [$rel, $line];
     }
 }
+
 if (!$hits) {
-    fwrite(STDOUT, "No e.oaci usages found." . PHP_EOL);
+    writeOut("No e.oaci usages found." . PHP_EOL);
     exit(0);
 }
 foreach ($hits as [$file, $line]) {
-    fwrite(STDOUT, sprintf("%s:%d -> revisar, usar e.estacion + JOIN estaciones\n", $file, $line));
+    writeOut(sprintf("%s:%d -> revisar, usar e.estacion + JOIN estaciones\n", $file, $line));
 }
 exit(1);

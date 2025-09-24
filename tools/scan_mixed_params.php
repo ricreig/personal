@@ -1,15 +1,9 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
+#!/usr/bin/env php
 <?php
 declare(strict_types=1);
-=======
-#!/usr/bin/env php
-<?php
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
-=======
-#!/usr/bin/env php
-<?php
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
+
+require_once __DIR__ . '/write_out.php';
+
 $root = dirname(__DIR__);
 $rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
 $pattern = "/->\s*prepare\s*\(\s*([\"'])(.*?)\1/s";
@@ -40,36 +34,8 @@ foreach ($rii as $file) {
             continue;
         }
         $offset = $match[1];
-        $line = substr_count(substr($code, 0, $offset), "\\n") + 1;
+        $line = substr_count(substr($code, 0, $offset), "\n") + 1;
         $results[] = [$rel, $line, trim($sql)];
-    }
-}
-<<<<<<< HEAD
-<<<<<<< HEAD
-if (!$results) {
-    fwrite(STDOUT, "No mixed named/positional parameters found." . PHP_EOL);
-    exit(0);
-}
-foreach ($results as [$file, $line, $sql]) {
-    fwrite(STDOUT, sprintf("%s:%d\n%s\n\n", $file, $line, $sql));
-=======
-=======
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
-if (!function_exists('writeOut')) {
-    function writeOut(string $message): void
-    {
-        if (defined('STDOUT')) {
-            fwrite(STDOUT, $message);
-            return;
-        }
-        // Some PHP builds (e.g. cgi-fcgi) do not expose STDOUT.
-        $handle = fopen('php://output', 'wb');
-        if ($handle === false) {
-            echo $message;
-            return;
-        }
-        fwrite($handle, $message);
-        fclose($handle);
     }
 }
 
@@ -79,9 +45,5 @@ if (!$results) {
 }
 foreach ($results as [$file, $line, $sql]) {
     writeOut(sprintf("%s:%d\n%s\n\n", $file, $line, $sql));
-<<<<<<< HEAD
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
-=======
->>>>>>> a1fc3d3 (Handle PHP builds without STDOUT constant)
 }
 exit(1);
