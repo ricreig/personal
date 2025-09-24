@@ -175,3 +175,47 @@ if (!function_exists('user_station_matrix')) {
         return $out;
     }
 }
+
+if (!function_exists('can_view_station')) {
+    /**
+     * Determina si el usuario autenticado puede ver la estación indicada.
+     */
+    function can_view_station(PDO $pdo, string $oaci): bool {
+        $oaci = strtoupper(trim($oaci));
+        if ($oaci === '') {
+            return false;
+        }
+
+        $user = auth_user();
+        if (!$user) {
+            return false;
+        }
+
+        $role = $user['role'] ?? $user['rol'] ?? '';
+        if ($role === 'admin') {
+            return true;
+        }
+
+        $userId = (int)($user['id'] ?? $user['uid'] ?? 0);
+        if ($userId <= 0) {
+            return false;
+        }
+
+        if (function_exists('user_station_matrix')) {
+            $matrix = user_station_matrix($pdo, $userId);
+            if (is_array($matrix) && array_key_exists($oaci, $matrix)) {
+                return (bool)$matrix[$oaci];
+            }
+        }
+
+        $st = $pdo->prepare('
+            SELECT MAX(can_view)
+            FROM user_station_perms
+            WHERE user_id = ? AND UPPER(TRIM(oaci)) = ?
+        ');
+        $st->execute([$userId, $oaci]);
+        $canView = $st->fetchColumn();
+
+        return $canView !== false && (int)$canView === 1;
+    }
+}
