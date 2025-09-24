@@ -10,6 +10,36 @@ if (!$u) {
   header('Location: ' . rtrim(BASE_URL, '/') . '/login.php?err=timeout');
   exit;
 }
+$role = (string)($u['role'] ?? 'viewer');
+$pdo  = db();
+
+$ESPECS = ['MANDOS'=>'MANDOS','ATCO'=>'ATCO','OSIV'=>'OSIV','ADMIN'=>'APOYO ADMON','IDS'=>'IDS'];
+$LIC_OPC = ['CTA III'=>'CTA III','OOA'=>'OOA','MET I'=>'MET I','TEC MTTO'=>'TEC MTTO','CAM'=>'Conducción GAP (CAM)'];
+$LCAR_OPC = ['A'=>'Tipo A','B'=>'Tipo B','C'=>'Tipo C','DL'=>'DL'];
+$CLASE_OPC = ['GPO-3'=>'GPO-3','GPO-4'=>'GPO-4','CLASE-3'=>'CLASE-3'];
+
+$stationOptions = [];
+try {
+  $st = $pdo->query('SELECT id_estacion, oaci FROM estaciones ORDER BY oaci');
+  while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+    $id = (int)($row['id_estacion'] ?? 0);
+    $oaci = strtoupper(trim((string)($row['oaci'] ?? '')));
+    if ($id > 0 && $oaci !== '') {
+      $stationOptions[] = ['id' => $id, 'oaci' => $oaci];
+    }
+  }
+} catch (Throwable $e) {
+  $stationOptions = [];
+}
+
+if (!is_admin()) {
+  $matrix = function_exists('user_station_matrix') ? user_station_matrix($pdo, (int)($u['id'] ?? 0)) : [];
+  $stationOptions = array_values(array_filter($stationOptions, static function (array $opt) use ($matrix): bool {
+    $oaci = $opt['oaci'] ?? '';
+    return $oaci !== '' && !empty($matrix[$oaci]);
+  }));
+}
+$hasStationAccess = is_admin() || count($stationOptions) > 0;
 ?>
 <!doctype html>
 <html lang="es" data-bs-theme="dark" data-theme="dark">
@@ -46,11 +76,17 @@ if (!$u) {
     </div>
 
     <!-- DERECHA: BOTONERA / MENÚ USUARIO -->
-    <div class="nav-right d-flex align-items-center justify-content-end gap-2">
-      <?php if (function_exists('is_admin') && is_admin()): ?>
-        <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
-        <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Diagnóstico</a>
-      <?php endif; ?>      <a class="btn btn-outline-primary btn-sm" href="/public/prestaciones.php">Prestaciones</a>
+      <div class="nav-right d-flex flex-wrap align-items-center justify-content-end gap-2 text-end">
+        <?php if ($role !== 'viewer'): ?>
+          <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#recordCreateModal">
+            Agregar registro
+          </button>
+        <?php endif; ?>
+        <?php if (function_exists('is_admin') && is_admin()): ?>
+          <a class="btn btn-outline-primary btn-sm" href="../admin/usuarios.php">Admin</a>
+          <a class="btn btn-outline-primary btn-sm" href="/public/diagnose.php">Diagnóstico</a>
+        <?php endif; ?>
+        <a class="btn btn-outline-primary btn-sm" href="/public/prestaciones.php">Prestaciones</a>
       <div class="dropdown">
         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           <?= htmlspecialchars($u['nombre'] ?? $u['email'] ?? 'Usuario') ?>
@@ -110,6 +146,199 @@ if (!$u) {
     </div>
 
 
+    <?php if ($role !== 'viewer'): ?>
+    <!-- Modal: Agregar registro -->
+    <div class="modal fade" id="recordCreateModal" tabindex="-1" aria-hidden="true" data-has-stations="<?= $hasStationAccess ? '1' : '0' ?>">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header border-0">
+            <h5 class="modal-title">Agregar nuevo registro</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <?php if (!$hasStationAccess): ?>
+              <div class="alert alert-warning">No cuentas con estaciones asignadas. Solicita al administrador mapearte al menos una para poder crear registros nuevos.</div>
+            <?php endif; ?>
+            <form id="recordCreateForm">
+              <fieldset class="row g-3" <?= $hasStationAccess ? '' : 'disabled' ?>>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newControl">No. de control</label>
+                  <input id="newControl" name="control" type="text" class="form-control" inputmode="numeric" pattern="\d+" required>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newSiglas">Siglas</label>
+                  <input id="newSiglas" name="siglas" type="text" class="form-control" maxlength="3" autocomplete="off">
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="newNombre">Nombre completo</label>
+                  <input id="newNombre" name="nombres" type="text" class="form-control" required>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="newEmail">Correo electrónico</label>
+                  <input id="newEmail" name="email" type="email" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newRFC">RFC</label>
+                  <input id="newRFC" name="rfc" type="text" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newCURP">CURP</label>
+                  <input id="newCURP" name="curp" type="text" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newNacimiento">Nacimiento</label>
+                  <input id="newNacimiento" name="fecha_nacimiento" type="text" class="form-control" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newAnt">Antigüedad</label>
+                  <input id="newAnt" name="ant" type="text" class="form-control" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="newDireccion">Dirección</label>
+                  <textarea id="newDireccion" name="direccion" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newPlaza">Código Plaza</label>
+                  <input id="newPlaza" name="plaza" type="text" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newEspec">Área</label>
+                  <select id="newEspec" name="espec" class="form-select">
+                    <option value="">—</option>
+                    <?php foreach ($ESPECS as $k => $label): ?>
+                      <option value="<?= htmlspecialchars($k) ?>"><?= htmlspecialchars($label) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newEstacion">Estación</label>
+                  <select id="newEstacion" name="estacion" class="form-select" required>
+                    <option value="">—</option>
+                    <?php foreach ($stationOptions as $opt): ?>
+                      <option value="<?= (int)$opt['id'] ?>"><?= htmlspecialchars($opt['oaci']) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                  <?php if (!is_admin()): ?>
+                    <div class="form-text">Solo podrás elegir entre tus estaciones asignadas.</div>
+                  <?php endif; ?>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newNivel">Nivel</label>
+                  <input id="newNivel" name="nivel" type="text" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="newNSS">NSS</label>
+                  <input id="newNSS" name="nss" type="text" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="newPuesto">Nombramiento / Puesto</label>
+                  <input id="newPuesto" name="puesto" type="text" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-12">
+                  <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newTipo1">Tipo licencia 1</label>
+                      <select id="newTipo1" name="tipo1" class="form-select">
+                        <option value="">—</option>
+                        <?php foreach ($LIC_OPC as $k => $label): ?>
+                          <option value="<?= htmlspecialchars($k) ?>"><?= htmlspecialchars($label) ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newLic1">No. licencia 1</label>
+                      <input id="newLic1" name="licencia1" type="text" class="form-control" autocomplete="off">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newVig1">Vigencia 1</label>
+                      <input id="newVig1" name="vigencia1" type="text" class="form-control" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newTipo2">Tipo licencia 2</label>
+                      <select id="newTipo2" name="tipo2" class="form-select">
+                        <option value="">—</option>
+                        <?php foreach ($LIC_OPC as $k => $label): ?>
+                          <option value="<?= htmlspecialchars($k) ?>"><?= htmlspecialchars($label) ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newLic2">No. licencia 2</label>
+                      <input id="newLic2" name="licencia2" type="text" class="form-control" autocomplete="off">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newVig2">Vigencia 2</label>
+                      <input id="newVig2" name="vigencia2" type="text" class="form-control" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newExamen1">LCAR / DL</label>
+                      <select id="newExamen1" name="examen1" class="form-select">
+                        <option value="">—</option>
+                        <?php foreach ($LCAR_OPC as $k => $label): ?>
+                          <option value="<?= htmlspecialchars($k) ?>"><?= htmlspecialchars($label) ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newExamenVig1">Vigencia LCAR/DL</label>
+                      <input id="newExamenVig1" name="examen_vig1" type="text" class="form-control" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newRTARI">RTARI</label>
+                      <input id="newRTARI" name="rtari" type="text" class="form-control" autocomplete="off">
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newRTARIVig">Vigencia RTARI</label>
+                      <input id="newRTARIVig" name="rtari_vig" type="text" class="form-control" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newExamen2">Clase examen médico</label>
+                      <select id="newExamen2" name="examen2" class="form-select">
+                        <option value="">—</option>
+                        <?php foreach ($CLASE_OPC as $k => $label): ?>
+                          <option value="<?= htmlspecialchars($k) ?>"><?= htmlspecialchars($label) ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newExpediente">Expediente médico</label>
+                      <input id="newExpediente" name="exp_med" type="text" class="form-control" autocomplete="off">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" for="newExamenVig2">Vigencia examen médico</label>
+                      <input id="newExamenVig2" name="examen_vig2" type="text" class="form-control" placeholder="dd/mm/aaaa" data-mask="date" inputmode="numeric" maxlength="10" autocomplete="off">
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            </form>
+            <div id="recordCreateMsg" class="small text-secondary mt-2"></div>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" form="recordCreateForm" class="btn btn-primary" id="recordCreateSubmit" <?= $hasStationAccess ? '' : 'disabled' ?>>Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Modal: Documentos -->
     <div class="modal fade" id="docModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -167,5 +396,6 @@ if (!$u) {
 
 <?php require __DIR__ . '/includes/Foot-js.php'; ?>
 <!-- Toda la lógica de la tabla/documents vive en /public/assets/app.js -->
+</body>
 </body>
 </html>

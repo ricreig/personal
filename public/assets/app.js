@@ -822,10 +822,86 @@ const rtari = renderRTARI(row.rtari, row.rtari_vig);
     return dt;
   }
 
+  function initRecordCreateModal() {
+    const modalEl = document.getElementById('recordCreateModal');
+    if (!modalEl) return;
+    const form = modalEl.querySelector('#recordCreateForm');
+    const submitBtn = modalEl.querySelector('#recordCreateSubmit');
+    const msg = modalEl.querySelector('#recordCreateMsg');
+    const hasStations = modalEl.getAttribute('data-has-stations') === '1';
+    const controlInput = form ? form.querySelector('#newControl') : null;
+
+    const reset = () => {
+      if (form) {
+        form.reset();
+      }
+      if (msg) {
+        msg.textContent = '';
+        msg.className = 'small text-secondary mt-2';
+      }
+      if (submitBtn) submitBtn.disabled = hasStations ? false : true;
+    };
+
+    modalEl.addEventListener('hidden.bs.modal', reset);
+    modalEl.addEventListener('shown.bs.modal', () => {
+      if (controlInput) {
+        controlInput.focus();
+        if (typeof controlInput.select === 'function') {
+          controlInput.select();
+        }
+      }
+    });
+
+    if (!form) return;
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!submitBtn) return;
+      if (!hasStations) {
+        if (msg) {
+          msg.textContent = 'No tienes estaciones mapeadas para crear registros nuevos.';
+          msg.className = 'small text-danger mt-2';
+        }
+        return;
+      }
+      if (typeof form.reportValidity === 'function' && !form.reportValidity()) {
+        return;
+      }
+      submitBtn.disabled = true;
+      if (msg) {
+        msg.textContent = 'Guardando…';
+        msg.className = 'small text-secondary mt-2';
+      }
+      const fd = new FormData(form);
+      try {
+        await fetchJSON(`${API_BASE}empleados_create.php`, { method: 'POST', body: fd });
+        if (msg) {
+          msg.textContent = 'Registro creado correctamente.';
+          msg.className = 'small text-success mt-2';
+        }
+        const table = $('#tabla').DataTable();
+        if (table) {
+          table.ajax.reload(null, false);
+        }
+        setTimeout(() => {
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+        }, 600);
+      } catch (err) {
+        if (msg) {
+          msg.textContent = err && err.message ? err.message : 'No se pudo crear el registro.';
+          msg.className = 'small text-danger mt-2';
+        }
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+  }
+
   // ================================
   // Arranque
   // ================================
   onReady(() => {
+    initRecordCreateModal();
     buildTable('lic'); // vista default
   });
 })();
