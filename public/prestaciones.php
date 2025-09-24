@@ -373,8 +373,8 @@ if (!$u) {
               <div class="card-header fw-semibold">Días Economicos (PECO) — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblPecosPersona">
-                  <thead><tr><th>Año</th><th>D-01</th><th>D-02</th><th>D-03</th><th>D-04</th><th>D-05</th><th>D-06</th><th>D-07</th><th>D-08</th><th>D-09</th><th>D-10</th><th>D-11</th><th>D-12</th><th>Editar</th><th>Eliminar</th></tr></thead>
-                  <tbody><tr><td colspan="15" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
+                  <thead><tr><th>Año</th><th>D-01</th><th>D-02</th><th>D-03</th><th>D-04</th><th>D-05</th><th>D-06</th><th>D-07</th><th>D-08</th><th>D-09</th><th>D-10</th><th>D-11</th><th>D-12</th><th>Acciones</th></tr></thead>
+                  <tbody><tr><td colspan="14" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
                 </table>
               </div>
             </div>
@@ -384,7 +384,7 @@ if (!$u) {
               <div class="card-header fw-semibold">Días Economicos (PECO) — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblPecosYear">
-                  <thead><tr><th>Estación</th><th>Trabajador</th><th>D-01</th><th>D-02</th><th>D-03</th><th>D-04</th><th>D-05</th><th>D-06</th><th>D-07</th><th>D-08</th><th>D-09</th><th>D-10</th><th>D-11</th><th>D-12</th><th>Editar</th><th>Eliminar</th></tr></thead>
+                  <thead><tr><th>Estación</th><th>Trabajador</th><th>D-01</th><th>D-02</th><th>D-03</th><th>D-04</th><th>D-05</th><th>D-06</th><th>D-07</th><th>D-08</th><th>D-09</th><th>D-10</th><th>D-11</th><th>D-12</th><th>Acciones</th></tr></thead>
                   <tbody><tr><td class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>
               </div>
@@ -399,8 +399,8 @@ if (!$u) {
               <div class="card-header fw-semibold">Días Acumulables — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblTxtPersona">
-                  <thead><tr><th>Año</th><th>Jue. Santo</th><th>Vie. Santo</th><th>D. Madres</th><th>SENEAM/ATC</th><th>D. Muertos</th><th>Onomástico</th><th>Fecha Nac.</th><th>Editar</th><th>Eliminar</th></tr></thead>
-                  <tbody><tr><td colspan="10" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
+                  <thead><tr><th>Año</th><th>Jue. Santo</th><th>Vie. Santo</th><th>D. Madres</th><th>SENEAM/ATC</th><th>D. Muertos</th><th>Onomástico</th><th>Fecha Nac.</th><th>Acciones</th></tr></thead>
+                  <tbody><tr><td colspan="9" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
                 </table>
               </div>
             </div>
@@ -410,7 +410,7 @@ if (!$u) {
               <div class="card-header fw-semibold">Días Acumulables — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblTxtYear">
-                  <thead><tr><th>Estación</th><th>Trabajador</th><th>Jue. Santo</th><th>Vie. Santo</th><th>D. Madres</th><th>SENEAM/ATC</th><th>D. Muertos</th><th>Onomástico</th><th>Fecha Nac.</th><th>Editar</th><th>Eliminar</th></tr></thead>
+                  <thead><tr><th>Estación</th><th>Trabajador</th><th>Jue. Santo</th><th>Vie. Santo</th><th>D. Madres</th><th>SENEAM/ATC</th><th>D. Muertos</th><th>Onomástico</th><th>Fecha Nac.</th><th>Acciones</th></tr></thead>
                   <tbody><tr><td class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>
               </div>
@@ -451,8 +451,8 @@ if (!$u) {
               <div class="card-header fw-semibold">Incapacidades — Vista por Persona</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblIncPersona">
-                  <thead><tr><th>Año</th><th>Folio</th><th>Inicia</th><th>Termina</th><th>Días</th><th>UMF</th><th>Diag.</th><th>Editar</th><th>Eliminar</th></tr></thead>
-                  <tbody><tr><td colspan="9" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
+                  <thead><tr><th>Año</th><th>Folio</th><th>Inicia</th><th>Termina</th><th>Días</th><th>UMF</th><th>Diag.</th><th>Acciones</th></tr></thead>
+                  <tbody><tr><td colspan="8" class="text-secondary">Seleccione un trabajador…</td></tr></tbody>
                 </table>
               </div>
             </div>
@@ -462,7 +462,7 @@ if (!$u) {
               <div class="card-header fw-semibold">Incapacidades — Vista por Año</div>
               <div class="card-body sticky-wrap">
                 <table class="table table-sm table-striped table-hover align-middle" id="tblIncYear">
-                  <thead><tr><th>Estación</th><th>Trabajador</th><th>Folio</th><th>Inicia</th><th>Termina</th><th>Días</th><th>UMF</th><th>Diag.</th><th>Editar</th><th>Eliminar</th></tr></thead>
+                  <thead><tr><th>Estación</th><th>Trabajador</th><th>Folio</th><th>Inicia</th><th>Termina</th><th>Días</th><th>UMF</th><th>Diag.</th><th>Acciones</th></tr></thead>
                   <tbody><tr><td class="text-secondary">Seleccione año…</td></tr></tbody>
                 </table>
               </div>
